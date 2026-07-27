@@ -1,0 +1,28 @@
+# Fixed screen size (WIDTH HEIGHT POLL_PERIOD). A fixed size sizes more
+# predictably than AUTO when a large TEXTBOX is involved.
+SCREEN 1050 850 1.0
+
+VERTICAL
+  TITLE "<%= @target_name %> SPACECOP"
+
+  # Housekeeping counters
+  HORIZONTAL
+    LABELVALUE SPACECOP SPACECOP_HK_TLM CMD_COUNT
+    SPACER 20 0
+    LABELVALUE SPACECOP SPACECOP_HK_TLM CMD_ERR_COUNT
+  END
+
+  SPACER 0 10
+
+  LABEL "IDS Alert Log (newest at bottom):"
+    SETTING RAW font-size 22px
+    SETTING TEXTCOLOR white
+    SETTING BACKCOLOR 30 30 30
+    SETTING WIDTH 100%
+
+  # Appending, scrolling history of every IDS_MSG (see src/widgets/IdslogWidget).
+  # 4th param (1000) = max lines retained.
+  WIDGET IDSLOG SPACECOP SPACECOP_REPORT_TLM IDS_MSG 1000
+    SETTING RAW width 1000px
+    SETTING RAW height 750px
+END

@@ -1,0 +1,1 @@
+cmd_/home/pi/cFS/apps/spacecop/kernel/aerospace.ko := ld -r -EL -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/pi/cFS/apps/spacecop/kernel/aerospace.ko /home/pi/cFS/apps/spacecop/kernel/aerospace.o /home/pi/cFS/apps/spacecop/kernel/aerospace.mod.o;  true

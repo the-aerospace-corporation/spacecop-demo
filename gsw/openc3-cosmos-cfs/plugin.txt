@@ -1,0 +1,71 @@
+# Set VARIABLEs here to allow variation in your plugin
+
+VARIABLE cfe_target_name CFE
+VARIABLE to_lab_target_name TO_LAB
+VARIABLE spacecop_target_name SPACECOP
+VARIABLE sch_target_name SCH
+VARIABLE sc_target_name SC
+VARIABLE mm_target_name MM
+VARIABLE md_target_name MD
+VARIABLE lc_target_name LC
+VARIABLE hs_target_name HS
+VARIABLE hk_target_name HK
+VARIABLE fm_target_name FM
+VARIABLE eps_target_name EPS
+VARIABLE ds_target_name DS
+VARIABLE cs_target_name CS
+VARIABLE ci_lab_target_name CI_LAB
+VARIABLE cfdp_target_name CFDP
+VARIABLE stpyld_target_name STPYLD
+VARIABLE sysmon_target_name SYSMON
+VARIABLE camera_target_name CAMERA
+
+# IP / host of the flight computer running cFS (target of the UDP interface).
+# Defaults to loopback for same-host use; override at plugin install with your
+# flight computer's address (e.g. its LAN IP).
+VARIABLE target_ip 127.0.0.1
+
+TARGET CFE <%= cfe_target_name %>
+TARGET TO_LAB <%= to_lab_target_name %>
+TARGET SPACECOP <%= spacecop_target_name %>
+TARGET SCH <%= sch_target_name %>
+TARGET SC <%= sc_target_name %>
+TARGET MM <%= mm_target_name %>
+TARGET MD <%= md_target_name %>
+TARGET LC <%= lc_target_name %>
+TARGET HS <%= hs_target_name %>
+TARGET HK <%= hk_target_name %>
+TARGET FM <%= fm_target_name %>
+TARGET EPS <%= eps_target_name %>
+TARGET DS <%= ds_target_name %>
+TARGET CS <%= cs_target_name %>
+TARGET CI_LAB <%= ci_lab_target_name %>
+TARGET CFDP <%= cfdp_target_name %>
+TARGET STPYLD <%= stpyld_target_name %>
+TARGET SYSMON <%= sysmon_target_name %>
+TARGET CAMERA <%= camera_target_name %>
+
+INTERFACE PISAT_INT openc3/interfaces/udp_interface.rb <%= target_ip %> 5012 5013 nil nil 128 nil nil
+  MAP_TARGET <%= cfe_target_name %>
+  MAP_TARGET <%= to_lab_target_name %>
+  MAP_TARGET <%= spacecop_target_name %>
+  MAP_TARGET <%= sch_target_name %>
+  MAP_TARGET <%= sc_target_name %>
+  MAP_TARGET <%= mm_target_name %>
+  MAP_TARGET <%= md_target_name %>
+  MAP_TARGET <%= lc_target_name %>
+  MAP_TARGET <%= hs_target_name %>
+  MAP_TARGET <%= hk_target_name %>
+  MAP_TARGET <%= fm_target_name %>
+  MAP_TARGET <%= eps_target_name %>
+  MAP_TARGET <%= ds_target_name %>
+  MAP_TARGET <%= cs_target_name %>
+  MAP_TARGET <%= ci_lab_target_name %>
+  MAP_TARGET <%= cfdp_target_name %>
+  MAP_TARGET <%= stpyld_target_name %>
+  MAP_TARGET <%= sysmon_target_name %>
+  MAP_TARGET <%= camera_target_name %>
+
+MICROSERVICE CFDP cfdp-microservice
+  CMD python cfdp.py
+WIDGET Idslog

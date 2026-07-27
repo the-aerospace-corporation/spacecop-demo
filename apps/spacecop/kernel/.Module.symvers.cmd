@@ -1,0 +1,1 @@
+cmd_/home/pi/cFS/apps/spacecop/kernel/Module.symvers :=  sed 's/ko$$/o/'  /home/pi/cFS/apps/spacecop/kernel/modules.order | scripts/mod/modpost -m -a    -o /home/pi/cFS/apps/spacecop/kernel/Module.symvers -e -i Module.symvers -T - 

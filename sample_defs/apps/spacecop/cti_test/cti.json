@@ -1,0 +1,31 @@
+{
+	"type": "bundle",
+	"id": "bundle--b9283eab-1a8b-4d45-9bfe-0a7891234bcd",
+	"objects": [
+		{
+			"type": "indicator",
+			"spec_version": "2.1",
+			"id": "indicator--fdc708a9-1cd4-496d-bbdb-eafe361c0f0c",
+			"created": "2026-01-06T12:00:00.000Z",
+			"modified": "2026-01-06T12:00:00.000Z",
+			"name": "File or Data Integrity Check Failure",
+			"pattern": "file:hashes != 'expected_hash_value' AND file:name = 'data_file']",
+			"pattern_type": "stix",
+			"confidence": 85,
+			"x_sparta_iob_id": "DISE-1",
+			"x_latitude": 37.7749,
+			"x_longitude": -122.4194
+		},
+		{
+			"type": "file",
+			"spec_version": "2.1",
+			"id": "file--12345678-90ab-cdef-1234-567890abcdef",
+			"name": "test.txt",
+			"hashes": {
+				"SHA-256": "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
+			},
+			"size": 435100,
+			"mime_type": "application/octet-stream"
+		}
+	]
+}

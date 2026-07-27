@@ -1,0 +1,619 @@
+================================================================================
+COSMOS DEFINITIONS SUMMARY
+================================================================================
+
+Total Targets: 18
+Total Commands: 232
+Total Telemetry: 41
+
+--------------------------------------------------------------------------------
+COMMANDS BY TARGET
+--------------------------------------------------------------------------------
+
+CAMERA:
+  - NOOP (StreamID: 0x19DA)
+    Generate an info event message with app version
+  - RESET_CTRS (StreamID: 0x1DBA)
+    Resets HK TLM parent and child task counters
+  - TAKE_PIC (StreamID: 0x19DA)
+    Takes a picture
+  - DELETE_LAST (StreamID: 0x19DA)
+    Deletes last picture taken
+  - CAMERA_REQUEST_HK_CC (StreamID: 0x19BB)
+    CAMERA HK Request
+
+CFDP:
+  - NOOP (StreamID: 0x185A)
+    Generate an info event message with app version
+  - RESET_CTRS (StreamID: 0x185A)
+    Resets HK TLM parent and child task counters
+  - DOWNLOAD_FROM_SATELLITE_CC (StreamID: 0x185A)
+    Download file from Satellite
+  - UPLOAD_TO_SATELLITE_CC (StreamID: 0x185A)
+    Upload file to Satellite
+  - UPLOAD_TO_SATELLITE_DATA (StreamID: 0x185A)
+    Upload data to Satellite
+
+CFE:
+  - CFE_TBL_ABORT_LOAD (StreamID: 0x1804)
+    This command will cause Table Services to discard the contents of a table buffer that was previously loaded with the data in a file as specified by a Table Load command. For single buffered tables, the allocated shared working buffer is freed and becomes available for other Table Load commands.
+  - CFE_TBL_ACTIVATE (StreamID: 0x1804)
+    This command will cause Table Services to notify a table's owner that an update is pending. The owning application will then update the contents of the active table buffer with the contents of the associated inactive table buffer at a time of their convenience.
+  - CFE_TBL_DELETE_CDS (StreamID: 0x1804)
+    This command will delete the Critical Data Store (CDS) associated with the specified Critical Table. Note that any table still present in the Table Registry is unable to be deleted from the Critical Data Store. All Applications that are accessing the critical table must release and unregister their access before the CDS can be deleted.
+  - CFE_TBL_DUMP (StreamID: 0x1804)
+    This command will cause the Table Services to put the contents of the specified table buffer into the command specified file.
+  - CFE_TBL_DUMP_REG (StreamID: 0x1804)
+    This command will cause Table Services to write some of the contents of the Table Registry to the command specified file. This allows the operator to see the current state and configuration of all tables that have been registered with the cFE.
+  - CFE_TBL_LOAD (StreamID: 0x1804)
+    This command loads the contents of the specified file into an inactive buffer for the table specified within the file.
+  - CFE_TBL_NOOP (StreamID: 0x1804)
+    This command performs no other function than to increment the command execution counter. The command may be used to verify general aliveness of the Table Services task.
+  - CFE_TBL_RESET (StreamID: 0x1804)
+    This command resets the following counters within the Table Services housekeeping telemetry: Command Execution Counter ($sc_$cpu_TBL_CMDPC)Command Error Counter ($sc_$cpu_TBL_CMDEC)Successful Table Validations Counter ($sc_$cpu_TBL_ValSuccessCtr)Failed Table Validations Counter ($sc_$cpu_TBL_ValFailedCtr)Number of Table Validations Requested ($sc_$cpu_TBL_ValReqCtr)
+  - CFE_TBL_TLM_REG (StreamID: 0x1804)
+    This command will cause Table Services to telemeter the contents of the Table Registry for the command specified table.
+  - CFE_TBL_VALIDATE (StreamID: 0x1804)
+    This command will cause Table Services to calculate the Data Integrity Value for the specified table and to notify the owning application that the table's validation function should be executed. The results of both the Data Integrity Value computation and the validation function are reported in Table Services Housekeeping Telemetry.
+  - CFE_TIME_ADD_1HZADJ (StreamID: 0x1805)
+    This command has been updated to take actual sub-seconds (1/2^32 seconds) rather than micro-seconds as an input argument. This change occurred after the determination was made that one micro-second is too large an increment for a constant 1Hz adjustment. This command continuously adjusts the Spacecraft Time Correlation Factor (STCF) every second, by adding the specified value. The adjustment to the STCF is applied in the Time Service local 1Hz interrupt handler. As the local 1Hz interrupt is not synchronized to the tone signal, one cannot say when the adjustment will occur, other than once a second, at about the same time relative to the tone. There was some debate about whether the maximum 1Hz clock drift correction factor would ever need to exceed some small fraction of a second. But, the decision was made to provide the capability to make 1Hz adjustments greater than one second and leave it to the ground system to provide mission specific limits.
+  - CFE_TIME_ADD_ADJUST (StreamID: 0x1805)
+    This command adjusts the Spacecraft Time Correlation Factor (STCF) by adding the specified value. The new STCF takes effect immediately upon execution of this command.
+  - CFE_TIME_ADD_DELAY (StreamID: 0x1805)
+    This command is used to factor out a known, predictable latency between the Time Server and a particular Time Client. The correction is applied (added) to the current time calculation for Time Clients, so this command has no meaning for Time Servers. Each Time Client can have a unique latency setting. The latency value is a positive number of seconds and microseconds that represent the deviation from the time maintained by the Time Server.
+  - CFE_TIME_DIAG_TLM (StreamID: 0x1805)
+    This command requests that the Time Service generate a message containing various data values not included in the normal Time Service housekeeping message. The command requests only a single copy of the diagnostic message. Refer to CFE_TIME_DiagPacket_t for a description of the Time Service diagnostic message contents.
+  - CFE_TIME_NOOP (StreamID: 0x1805)
+    This command performs no other function than to increment the command execution counter. The command may be used to verify general aliveness of the Time Services task.
+  - CFE_TIME_RESET (StreamID: 0x1805)
+    This command resets the following counters within the Time Services Housekeeping Telemetry :  Command Execution Counter ($sc_$cpu_TIME_CMDPC)Command Error Counter ($sc_$cpu_TIME_CMDEC) This command also resets the following counters within the Time Services Diagnostic Telemetry :Tone Signal Detected Software Bus Message Counter ($sc_$cpu_TIME_DTSDetCNT)Time at the Tone Data Software Bus Message Counter ($sc_$cpu_TIME_DTatTCNT)Tone Signal/Data Verify Counter ($sc_$cpu_TIME_DVerifyCNT)Tone Signal/Data Error Counter ($sc_$cpu_TIME_DVerifyER)Tone Signal Interrupt Counter ($sc_$cpu_TIME_DTsISRCNT)Tone Signal Interrupt Error Counter ($sc_$cpu_TIME_DTsISRERR)Tone Signal Task Counter ($sc_$cpu_TIME_DTsTaskCNT)Local 1 Hz Interrupt Counter ($sc_$cpu_TIME_D1HzISRCNT)Local 1 Hz Task Counter ($sc_$cpu_TIME_D1HzTaskCNT)Reference Time Version Counter ($sc_$cpu_TIME_DVersionCNT) 
+  - CFE_TIME_SET_LEAP_SECONDS (StreamID: 0x1805)
+    This command sets the spacecraft Leap Seconds to the specified value. Leap Seconds may be positive or negative, and there is no limit to the value except, of course, the limit imposed by the 16 bit signed integer data type. The new Leap Seconds value takes effect immediately upon execution of this command.
+  - CFE_TIME_SET_MET (StreamID: 0x1805)
+    This command sets the Mission Elapsed Timer (MET) to the specified value. Note that the MET (as implemented for cFE Time Service) is a logical representation and not a physical timer. Thus, setting the MET is not dependent on whether the hardware supports a MET register that can be written to. Note also that Time Service 'assumes' that during normal operation, the MET is synchronized to the tone signal. Therefore, unless operating in FLYWHEEL mode, the sub-seconds portion of the MET will be set to zero at the next tone signal interrupt. The new MET takes effect immediately upon execution of this command.
+  - CFE_TIME_SET_SIGNAL (StreamID: 0x1805)
+    This command selects the Time Service tone signal source. Although the list of potential tone signal sources is mission specific, a common choice is the selection of primary or redundant tone signal. The selection may be available to both the Time Server and Time Clients, depending on hardware configuration. Notes: This command is only valid when the CFE_TIME_CFG_SIGNAL configuration parameter in the cfe_platform_cfg.h file has been set to TRUE. 
+  - CFE_TIME_SET_SOURCE (StreamID: 0x1805)
+    This command selects the Time Service clock source. Although the list of potential clock sources is mission specific and defined via configuration parameters, this command provides a common method for switching between the local processor clock and an external source for time data. When commanded to accept external time data (GPS, MET, spacecraft time, etc.), the Time Server will enable input via an API function specific to the configuration definitions for the particular source. When commanded to use internal time data, the Time Server will ignore the external data. However, the Time Server will continue to use the API function as the trigger to generate a 'time at the tone' command packet regardless of the internal/external command selection. Notes: Operating in FLYWHEEL mode is not considered a choice related to clock source, but rather an element of the clock state. See below for a description of the CFE_TIME_SET_STATE_CC command.This command is only valid when the CFE_TIME_CFG_SOURCE configuration parameter in the cfe_platform_cfg.h file has been set to TRUE.
+  - CFE_TIME_SET_STATE (StreamID: 0x1805)
+    This command indirectly affects the Time Service on-board determination of clock state. Clock state is a combination of factors, most significantly whether the spacecraft time has been accurately set, and whether Time Service is operating in FLYWHEEL mode. This command may be used to notify the Time Server that spacecraft time is now correct, or that time is no longer correct. This information will be distributed to Time Clients, and in turn, to any interested sub-systems.  Also, this command may be used to force a Time Server or Time Client into FLYWHEEL mode. Use of FLYWHEEL mode is mainly for debug purposes although in extreme circumstances, it may be of value to force Time Service not to rely on normal time updates. Note that when commanded into FLYWHEEL mode, the Time Service will remain so until receipt of another 'set state' command setting the state into a mode other than FLYWHEEL. Note also that setting the clock state to VALID or INVALID on a Time Client that is currently getting time updates from the Time Server will have very limited effect. As soon as the Time Client receives the next time update, the VALID/INVALID selection will be set to that of the Time Server. However, setting a Time Client to FLYWHEEL cannot be overridden by the Time Server since the Time Client will ignore time updates from the Time Server while in FLYWHEEL mode.
+  - CFE_TIME_SET_STCF (StreamID: 0x1805)
+    This command sets the Spacecraft Time Correlation Factor (STCF) to the specified value. This command differs from the previously described SET CLOCK in the nature of the command argument. This command sets the STCF value directly, rather than extracting the STCF from a value representing the total of MET, STCF and optionally, Leap Seconds. The new STCF takes effect immediately upon execution of this command.
+  - CFE_TIME_SET_TIME (StreamID: 0x1805)
+    This command sets the spacecraft clock to a new value, regardless of the current setting (time jam). The new time value represents the desired offset from the mission-defined time epoch and takes effect immediately upon execution of this command. Time Service will calculate a new STCF value based on the current MET and the desired new time using one of the following: If Time Service is configured to compute current time as TAI. STCF = (new time) - (current MET)  (current time) = (current MET) + STCF. If Time Service is configured to compute current time as UTC STCF = ((new time) - (current MET)) + (Leap Seconds)  (current time) = ((curent MET) + STCF) - (Leap Seconds).
+  - CFE_TIME_SUB_1HZADJ (StreamID: 0x1805)
+    This command has been updated to take actual sub-seconds (1/2^32 seconds) rather than micro-seconds as an input argument. This change occurred after the determination was made that one micro-second is too large an increment for a constant 1Hz adjustment. This command continuously adjusts the Spacecraft Time Correlation Factor (STCF) every second, by subtracting the specified value. The adjustment to the STCF is applied in the Time Service local 1Hz interrupt handler. As the local 1Hz interrupt is not synchronized to the tone signal, one cannot say when the adjustment will occur, other than once a second, at about the same time relative to the tone.There was some debate about whether the maximum 1Hz clock drift correction factor would ever need to exceed some small fraction of a second. But, the decision was made to provide the capability to make 1Hz adjustments greater than one second and leave it to the ground system to provide mission specific limits.
+  - CFE_TIME_SUB_ADJUST (StreamID: 0x1805)
+    This command adjusts the Spacecraft Time Correlation Factor (STCF) by subtracting the specified value. The new STCF takes effect immediately upon execution of this command.
+  - CFE_TIME_SUB_DELAY (StreamID: 0x1805)
+    This command is used to factor out a known, predictable latency between the Time Server and a particular Time Client. The correction is applied (subtracted) to the current time calculation for Time Clients, so this command has no meaning for Time Servers. Each Time Client can have a unique latency setting. The latency value is a positive number of seconds and microseconds that represent the deviation from the time maintained by the Time Server. Note that it is unimaginable that the seconds value will ever be anything but zero.
+  - CFE_TIME_SEND_HK (StreamID: 0x180D)
+    Request cFS TIME HK Packet
+  - EXAMPLE (StreamID: None)
+    Packet description
+  - CFE_EVS_ADD_EVENT_FILTER (StreamID: 0x1801)
+    This command adds the given filter for the given application identifier and event identifier. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_CLEAR_LOG (StreamID: 0x1801)
+    This command clears the contents of the local event log.
+  - CFE_EVS_DELETE_EVENT_FILTER (StreamID: 0x1801)
+    This command removes the given filter for the given application identifier and event identifier. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_DISABLE_APP_EVENTS (StreamID: 0x1801)
+    This command disables the command specified application from sending events through Event Service. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_DISABLE_APP_EVENT_TYPE (StreamID: 0x1801)
+    This command disables the command specified event type for the command specified application, preventing the application from sending event messages of the command specified event type through Event Service. An Event Type is defined to be a classification of an Event Message such as debug, informational, critical, and error. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_DISABLE_EVENT_TYPE (StreamID: 0x1801)
+    This command disables the command specified Event Type preventing event messages of this type to be sent through Event Service. An Event Type is defined to be a classification of an Event Message such as debug, informational, error and critical. This command is a global disable of a particular event type, it applies to all applications.
+  - CFE_EVS_DISABLE_PORTS (StreamID: 0x1801)
+    This command disables the specified port from outputting event messages.
+  - CFE_EVS_ENABLE_APP_EVENTS (StreamID: 0x1801)
+    This command enables the command specified application to send events through the Event Service. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_ENABLE_APP_EVENT_TYPE (StreamID: 0x1801)
+    This command enables the command specified event type for the command specified application, allowing the application to send event messages of the command specified event type through Event Service. An Event Type is defined to be a classification of an Event Message such as debug, informational, critical, and error. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_ENABLE_EVENT_TYPE (StreamID: 0x1801)
+    This command enables the command specified Event Type allowing event messages of this type to be sent through Event Service. An Event Type is defined to be a classification of an Event Message such as debug, informational, error and critical. This command is a global enable of a particular event type, it applies to all applications.
+  - CFE_EVS_ENABLE_PORTS (StreamID: 0x1801)
+    This command enables the command specified port to output event messages
+  - CFE_EVS_FILE_WRITE_APP_DATA (StreamID: 0x1801)
+    This command writes all application data to a file for all applications that have registered with the EVS. The application data includes the Application ID, Active Flag, Event Count, Event Types Active Flag, and Filter Data.
+  - CFE_EVS_FILE_WRITE_LOG_DATA (StreamID: 0x1801)
+    This command requests the Event Service to generate a file containing the contents of the local event log.
+  - CFE_EVS_NO_OPERATION (StreamID: 0x1801)
+    This command performs no other function than to increment the command execution counter. The command may be used to verify general aliveness of the Event Services task.
+  - CFE_EVS_RESET_ALL_FILTERS (StreamID: 0x1801)
+    This command resets all of the command specified applications event filters. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_RESET_APP_COUNTER (StreamID: 0x1801)
+    This command sets the command specified application's event counter to zero. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_RESET_COUNTERS (StreamID: 0x1801)
+    This command resets the following counters within the Event Services housekeeping telemetry:  Command Execution Counter ($sc_$cpu_EVS_CMDPC)Command Error Counter ($sc_$cpu_EVS_CMDEC) 
+  - CFE_EVS_RESET_FILTER (StreamID: 0x1801)
+    This command resets the command specified application's event filter for the command specified event ID. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_SET_EVENT_FORMAT_MODE (StreamID: 0x1801)
+    This command sets the event format mode to the command specified value. The event format mode may be either short or long. A short event format detaches the Event Data from the event message and only includes the following information in the event packet: Processor ID, Application ID, Event ID, and Event Type. Refer to section 5.3.3.4 for a description of the Event Service event packet contents. Event Data is defined to be data describing an Event that is supplied to the cFE Event Service. ASCII text strings are used as the primary format for Event Data because heritage ground systems use string compares as the basis for their automated alert systems. Two systems, ANSR and SERS were looked at for interface definitions. The short event format is used to accommodate experiences with limited telemetry bandwidth. The long event format includes all event information included within the short format along with the Event Data.
+  - CFE_EVS_SET_FILTER (StreamID: 0x1801)
+    This command sets the command specified application's event filter mask to the command specified value for the command specified event. Note: In order for this command to take effect, applications must be registered for Event Service.
+  - CFE_EVS_SET_LOG_MODE (StreamID: 0x1801)
+    This command sets the logging mode to the command specified value.
+  - CFE_SB_DISABLE_ROUTE (StreamID: 0x1803)
+    This command will disable a particular destination. The destination is specified in terms of MsgID and PipeID. The MsgId and PipeID are parmaters in the command. All destinations are enabled by default.
+  - CFE_SB_DISABLE_SUB_REPORTING (StreamID: 0x1803)
+    be used only by the CFS SBN (Software Bus Networking) Application. It is not intended to be sent from the ground or used by operations. When subscription reporting is enabled, SB will generate and send a software bus packet for each subscription received. The software bus packet that is sent contains the information received in the subscription API. This subscription report is neeeded by SBN if offboard routing is required.
+  - CFE_SB_ENABLE_ROUTE (StreamID: 0x1803)
+    This command will enable a particular destination. The destination is specified in terms of MsgID and PipeID. The MsgId and PipeID are parmaters in the command. All destinations are enabled by default. This command is needed only after a CFE_SB_DISABLE_ROUTE_CC command is used.
+  - CFE_SB_ENABLE_SUB_REPORTING (StreamID: 0x1803)
+    be used only by the CFS SBN (Software Bus Networking) Application. It is not intended to be sent from the ground or used by operations. When subscription reporting is enabled, SB will generate and send a software bus packet for each subscription received. The software bus packet that is sent contains the information received in the subscription API. This subscription report is neeeded by SBN if offboard routing is required.
+  - CFE_SB_NOOP (StreamID: 0x1803)
+    This command performs no other function than to increment the command execution counter. The command may be used to verify general aliveness of the Software Bus task.
+  - CFE_SB_RESET_CTRS (StreamID: 0x1803)
+    This command resets the following counters within the Software Bus housekeeping telemetry: Command Execution Counter ($sc_$cpu_SB_CMDPC)Command Error Counter ($sc_$cpu_SB_CMDEC)
+  - CFE_SB_SEND_MAP_INFO (StreamID: 0x1803)
+    map information. The message map is a lookup table (an array of uint16s)that allows fast access to the correct routing table element during a softeware bus send operation. This is diasgnostic information that may be needed due to the dynamic nature of the cFE software bus. An abosulte path and filename may be specified in the command. If this command field contains an empty string (NULL terminator as the first character) the default file path and name is used. The default file path and name is defined in the platform configuration file as CFE_SB_DEFAULT_MAP_FILENAME.
+  - CFE_SB_SEND_PIPE_INFO (StreamID: 0x1803)
+    This command will create a file containing the software bus pipe information. The pipe information contains information about every pipe that has been created through the CFE_SB_CreatePipe API. An abosulte path and filename may be specified in the command. If this command field contains an empty string (NULL terminator as the first character) the default file path and name is used. The default file path and name is defined in the platform configuration file as CFE_SB_DEFAULT_PIPE_FILENAME.
+  - CFE_SB_SEND_PREV_SUBS (StreamID: 0x1803)
+    regarding all subscriptions previously received by SB. This command is intended to be used only by the CFS SBN(Software Bus Networking) Application. It is not intended to be sent from the ground or used by operations. When this command is received the software bus will generate and send a series of packets containing information about all subscription previously received.
+  - CFE_SB_SEND_ROUTING_INFO (StreamID: 0x1803)
+    This command will create a file containing the software bus routing information. The routing information contains information about every subscription that has been received through the SB subscription APIs. An abosulte path and filename may be specified in the command. If this command field contains an empty string (NULL terminator as the first character) the default file path and name is used. The default file path and name is defined in the platform configuration file as CFE_SB_DEFAULT_ROUTING_FILENAME.
+  - CFE_SB_SEND_SB_STATS (StreamID: 0x1803)
+    This command will cause the SB task to send a statistics packet containing current utilization figures and high water marks which may be useful for checking the margin of the SB platform configuration settings.
+
+CFS:
+  - MD_JAM_DWELL (StreamID: 0x1890)
+    This command inserts the specified dwell parameters (dwell address, dwell field length, and delay count) into the specified table, at the specified index.
+  - MD_NOOP (StreamID: 0x1890)
+    This command increments the MD application's valid command execution counter.
+  - MD_RESET_CNTRS (StreamID: 0x1890)
+    This command resets the following counters within the Memory Dwell housekeeping telemetry: Command Execution Counter ($sc_$cpu_MD_CMDPC)Command Error Counter ($sc_$cpu_MD_CMDEC) 
+  - MD_START_DWELL (StreamID: 0x1890)
+    This command sets the Enabled flag(s) associated with the Dwell Table(s) that have been designated by the command's TableMask argument.
+  - MD_STOP_DWELL (StreamID: 0x1890)
+    This command clears the Enabled flag(s) associated with the Dwell Table(s) that have been designated by the command's TableMask argument.
+  - MD_SET_SIGNATURE (StreamID: 0x1890)
+    Associates a signature with the specified Dwell Table.
+  - CI_DEBUG_NOOP_CC (StreamID: 0x18E0)
+    NOOP Command
+  - CI_DEBUG_RESET_COUNTERS_CC (StreamID: 0x18E0)
+    Reset Counters
+  - TO_DEBUG_NOOP_CC (StreamID: 0x18E8)
+    NOOP Command
+  - TO_DEBUG_ENABLE_OUTPUT_CC (StreamID: 0x18E8)
+    Enable Output Command
+  - TO_DEBUG_REMOVE_ALL_PKT_CC (StreamID: 0x18E8)
+    Remove all packets
+  - HK_NOOP (StreamID: 0x189A)
+    This command will increment the command execution counter and send an event containing the version number of the application
+  - HK_RESET (StreamID: 0x189A)
+    This command resets the following counters within the HK housekeeping telemetry: Command Execution Counter ($sc_$cpu_HK_CMDPC)Command Error Counter ($sc_$cpu_HK_CMDEC)Combined Packets Sent Counter ($sc_$cpu_HK_CmbPktSent)Missing Data Counter ($sc_$cpu_HK_MissDataCtr) 
+  - HS_DISABLE_ALIVENESS (StreamID: 0x18AE)
+    Disables the Aliveness Indicator UART output
+  - HS_DISABLE_APPMON (StreamID: 0x18AE)
+    Disables the Critical Applications Monitor
+  - HS_DISABLE_CPUHOG (StreamID: 0x18AE)
+    Disables the CPU Hogging Indicator Event Message
+  - HS_DISABLE_EVENTMON (StreamID: 0x18AE)
+    Disables the Critical Events Monitor
+  - HS_ENABLE_ALIVENESS (StreamID: 0x18AE)
+    Enables the Aliveness Indicator UART output
+  - HS_ENABLE_APPMON (StreamID: 0x18AE)
+    Enables the Critical Applications Monitor
+  - HS_ENABLE_CPUHOG (StreamID: 0x18AE)
+    Enables the CPU Hogging Indicator Event Message
+  - HS_ENABLE_EVENTMON (StreamID: 0x18AE)
+    Enables the Critical Events Monitor
+  - HS_NOOP (StreamID: 0x18AE)
+    Implements the Noop command that insures the HS task is alive
+  - HS_RESET (StreamID: 0x18AE)
+    Resets the HS housekeeping counters
+  - HS_RESET_RESETS_PERFORMED (StreamID: 0x18AE)
+    Resets the count of HS performed resets maintained by HS
+  - HS_SET_MAX_RESETS (StreamID: 0x18AE)
+    Sets the max allowable count of processor resets to the provided value
+  - DS_ADD_MID (StreamID: 0x18BB)
+    This command will change the Message ID selection for an unused Packet Filter Table entry to the indicated value.
+  - DS_CLOSE_ALL (StreamID: 0x18BB)
+    This command will close all open Destination Files. NOTE: Using this command may incur a performance hit based upon the number and size of the files being closed. 
+  - DS_CLOSE_FILE (StreamID: 0x18BB)
+    This command will close the indicated Destination File.
+  - DS_GET_FILE_INFO (StreamID: 0x18BB)
+    This command will send the DS File Info Packet.
+  - DS_NOOP (StreamID: 0x18BB)
+    This command will increment the command execution counter and send an event containing the version number of the application. The command is often used as a general test for application 'aliveness'.
+  - DS_RESET (StreamID: 0x18BB)
+    This command will set the following housekeeping counters to zero: Command Execution Counter ($sc_$cpu_DS_CMDPC)Command Error Counter ($sc_$cpu_DS_CMDEC)Ignored Packet Counter ($sc_$cpu_DS_IgnoredPktCnt)Filtered Packet Counter ($sc_$cpu_DS_FilteredPktCnt)Passed Packet Counter ($sc_$cpu_DS_PassedPktCnt)File Access Counter ($sc_$cpu_DS_FileWriteCnt)File Access Error Counter ($sc_$cpu_DS_FileWriteErrCnt)Destination Table Load Counter ($sc_$cpu_DS_DestLoadCnt)Filter Table Load Counter ($sc_$cpu_DS_FilterLoadCnt)Destination Table Ptr Error Counter ($sc_$cpu_DS_DestPtrErrCnt)Filter Table Ptr Error Counter ($sc_$cpu_DS_FilterPtrErrCnt) 
+  - DS_SET_APP_STATE (StreamID: 0x18BB)
+    This command will modify the Ena/Dis State selection for the DS application. No packets are stored while DS is disabled.
+  - DS_SET_DEST_AGE (StreamID: 0x18BB)
+    This command will modify the max file age selection for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_BASE (StreamID: 0x18BB)
+    This command will modify the Basename portion of the filename for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_COUNT (StreamID: 0x18BB)
+    This command will modify the sequence count value for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_EXT (StreamID: 0x18BB)
+    This command will modify the Extension portion of the filename for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_PATH (StreamID: 0x18BB)
+    This command will modify the Pathname portion of the filename for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_SIZE (StreamID: 0x18BB)
+    This command will modify the max file size selection for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_STATE (StreamID: 0x18BB)
+    This command will modify the Ena/Dis State selection for the indicated entry in the Destination File Table.
+  - DS_SET_DEST_TYPE (StreamID: 0x18BB)
+    This command will modify the Filename Type selection for the indicated entry in the Destination File Table.
+  - DS_SET_FILTER_FILE (StreamID: 0x18BB)
+    This command will modify the Destination File selection for the indicated entry in the Packet Filter Table.
+  - DS_SET_FILTER_PARMS (StreamID: 0x18BB)
+    This command will modify the Algorithm Parameters for the indicated entry in the Packet Filter Table.
+  - DS_SET_FILTER_TYPE (StreamID: 0x18BB)
+    This command will modify the Filter Type selection for the indicated entry in the Packet Filter Table.
+  - LC_NOOP (StreamID: 0x18A4)
+    Implements the Noop command that insures the LC task is alive
+  - LC_RESET_AP_STATS (StreamID: 0x18A4)
+    Resets actionpoint statistics
+  - LC_RESET (StreamID: 0x18A4)
+    Resets the LC housekeeping counters
+  - LC_RESET_WP_STATS (StreamID: 0x18A4)
+    Resets watchpoint statistics
+  - LC_SET_AP_PERMOFF (StreamID: 0x18A4)
+    Set the specified actionpoint's state to LC_APSTATE_PERMOFF
+  - LC_SET_AP_STATE (StreamID: 0x18A4)
+    Set actionpoint state
+  - LC_SET_LC_STATE (StreamID: 0x18A4)
+    Sets the operational state of the LC application
+  - SC_APPEND_ATS (StreamID: 0x18A9)
+    Adds contents of the Append table to the specified ATS table
+  - SC_CONTINUE_ATS_ON_FAILURE (StreamID: 0x18A9)
+    Sets the flag which specifies whether or not to continue processing an ATS if one of the commands in the ATS fails checksum validation before being sent out.
+  - SC_DISABLE_RTS (StreamID: 0x18A9)
+    Disables the specified RTS
+  - SC_DISABLE_RTSGRP (StreamID: 0x18A9)
+    The enable state for an RTS may be ENABLED or DISABLED. This command sets the enable state for the specified group of RTS to DISABLED.
+  - SC_ENABLE_RTS (StreamID: 0x18A9)
+    Enables the specified RTS
+  - SC_ENABLE_RTSGRP (StreamID: 0x18A9)
+    The enable state for an RTS may be ENABLED or DISABLED. This command sets the enable state for the specified group of RTS to ENABLED.
+  - SC_JUMP_ATS (StreamID: 0x18A9)
+    Moves the 'current time' pointer in the ATS to another time
+  - SC_MANAGE_TABLE (StreamID: 0x18A9)
+    This command signals a need for the host application (SC) to allow cFE Table Services to manage the specified table. For loadable tables, this command indicates that a table update is available. For dump only tables, this command indicates that cFE Table Services wants to dump the table data. In either case, the host application must call the table manage API function so that the pending function can be executed within the context of the host.
+  - SC_NOOP (StreamID: 0x18A9)
+    Implements the Noop command that insures the SC app is alive
+  - SC_RESET_COUNTERS (StreamID: 0x18A9)
+    Resets the SC housekeeping counters
+  - SC_START_ATS (StreamID: 0x18A9)
+    Starts the specified ATS
+  - SC_START_RTS (StreamID: 0x18A9)
+    Starts the specified RTS
+  - SC_START_RTSGRP (StreamID: 0x18A9)
+    The load state for an RTS may be LOADED or NOT LOADED. The enable state for an RTS may be ENABLED or DISABLED. The run state for an RTS may be STARTED or STOPPED. This command STARTS each RTS in the specified group that is currently LOADED, ENABLED and STOPPED.
+  - SC_STOP_ATS (StreamID: 0x18A9)
+    Stops the specified ATS
+  - SC_STOP_RTS (StreamID: 0x18A9)
+    Stops the specified RTS
+  - SC_STOP_RTSGRP (StreamID: 0x18A9)
+    The load state for an RTS may be LOADED or NOT LOADED. The enable state for an RTS may be ENABLED or DISABLED. The run state for an RTS may be STARTED or STOPPED. This command STOPS each RTS in the specified group that is currently STARTED.
+  - SC_SWITCH_ATS (StreamID: 0x18A9)
+    Switches the running ATS and the ATS no running
+  - SC_SEND_HK (StreamID: 0x18AA)
+    Request SC Housekeeping
+
+CS:
+  - CS_CANCEL_ONESHOT (StreamID: 0x189F)
+    Cancels a one shot calculation that is already in progress.
+  - CS_DISABLE_ALL_CS (StreamID: 0x189F)
+    Disables all background checking
+  - CS_DISABLE_APPS (StreamID: 0x189F)
+    Disable the App table background checksumming
+  - CS_DISABLE_CFECORE (StreamID: 0x189F)
+    Disables background checking on the cFE core code segment
+  - CS_DISABLE_EEPROM (StreamID: 0x189F)
+    Disable the Eeprom table background checksumming
+  - CS_DISABLE_ENTRY_EEPROM (StreamID: 0x189F)
+    Disable the Eeprom entry background checksumming
+  - CS_DISABLE_ENTRY_MEMORY (StreamID: 0x189F)
+    Disable the Memory entry background checksumming
+  - CS_DISABLE_MEMORY (StreamID: 0x189F)
+    Disable the Memory table background checksumming
+  - CS_DISABLE_NAME_APP (StreamID: 0x189F)
+    Disable background checking of the app
+  - CS_DISABLE_NAME_TABLE (StreamID: 0x189F)
+    Disable background checking of the table
+  - CS_DISABLE_OS (StreamID: 0x189F)
+    Disables background checking on the OS code segment code segment
+  - CS_DISABLE_TABLES (StreamID: 0x189F)
+    Disable the Tables table background checksumming
+  - CS_ENABLE_ALL_CS (StreamID: 0x189F)
+    Allows CS to continue background checking
+  - CS_ENABLE_APPS (StreamID: 0x189F)
+    Allow the App table to checksummed in the background
+  - CS_ENABLE_CFECORE (StreamID: 0x189F)
+    Enables background checking on the cFE core code segment
+  - CS_ENABLE_EEPROM (StreamID: 0x189F)
+    Allow the Eeprom table to checksummed in the background
+  - CS_ENABLE_ENTRY_EEPROM (StreamID: 0x189F)
+    Allow the Eeprom entry to checksummed in the background
+  - CS_ENABLE_ENTRY_MEMORY (StreamID: 0x189F)
+    Allow the Memory entry to checksummed in the background
+  - CS_ENABLE_MEMORY (StreamID: 0x189F)
+    Allow the Memory table to checksummed in the background
+  - CS_ENABLE_NAME_APP (StreamID: 0x189F)
+    Allow the app to checksummed in the background
+  - CS_ENABLE_NAME_TABLE (StreamID: 0x189F)
+    Allow the table to checksummed in the background
+  - CS_ENABLE_OS (StreamID: 0x189F)
+    Enables background checking on the OS code segment
+  - CS_ENABLE_TABLES (StreamID: 0x189F)
+    Allow the Tables table to checksummed in the background
+  - CS_GET_ENTRY_ID_EEPROM (StreamID: 0x189F)
+    Gets the Entry ID of an Eeprom address to use in subsequent commands.
+  - CS_GET_ENTRY_ID_MEMORY (StreamID: 0x189F)
+    Gets the Entry ID of a Memory address to use in subsequent commands.
+  - CS_NOOP (StreamID: 0x189F)
+    Implements the Noop command that insures the CS task is alive
+  - CS_ONESHOT (StreamID: 0x189F)
+    Computes a checksum on the given address and size of memory specified in the command. This command spawns a child task to complete the checksum.
+  - CS_RECOMPUTE_BASELINE_APP (StreamID: 0x189F)
+    Recompute the baseline checksum of the app and use that value as the new baseline. This command spawns a child task to do the recompute.
+  - CS_RECOMPUTE_BASELINE_CFECORE (StreamID: 0x189F)
+    Recomputesthe baseline checksum of the cFE core and use the new value as the baseline.
+  - CS_RECOMPUTE_BASELINE_EEPROM (StreamID: 0x189F)
+    Recompute the baseline checksum of the Eeprom table entry and use that value as the new baseline. This command spawns a child task to do the recompute.
+  - CS_RECOMPUTE_BASELINE_MEMORY (StreamID: 0x189F)
+    Recompute the baseline checksum of the Memory table entry and use that value as the new baseline. This command spawns a child task to do the recompute.
+  - CS_RECOMPUTE_BASELINE_OS (StreamID: 0x189F)
+    Recomputesthe baseline checksum of the OS code segment and use the new value as the baseline.
+  - CS_RECOMPUTE_BASELINE_TABLE (StreamID: 0x189F)
+    Recompute the baseline checksum of the table and use that value as the new baseline. This command spawns a child task to do the recompute.
+  - CS_REPORT_BASELINE_APP (StreamID: 0x189F)
+    Reports the baseline checksum of the app that has already been calculated.
+  - CS_REPORT_BASELINE_CFECORE (StreamID: 0x189F)
+    Reports the baseline checksum of the cFE core that has already been calculated.
+  - CS_REPORT_BASELINE_EEPROM (StreamID: 0x189F)
+    Reports the baseline checksum of the Eeprom table entry that has already been calculated.
+  - CS_REPORT_BASELINE_MEMORY (StreamID: 0x189F)
+    Reports the baseline checksum of the Memory table entry that has already been calculated.
+  - CS_REPORT_BASELINE_OS (StreamID: 0x189F)
+    Reports the baseline checksum of the OS code segment that has already been calculated.
+  - CS_REPORT_BASELINE_TABLE (StreamID: 0x189F)
+    Reports the baseline checksum of the table that has already been calculated.
+  - CS_RESET (StreamID: 0x189F)
+    Resets the CS housekeeping counters
+
+EPS:
+  - NOOP (StreamID: 0x19AA)
+    Generate an info event message with app version
+  - RESET_CTRS (StreamID: 0x19AA)
+    Resets HK TLM parent and child task counters
+  - EPS_REQUEST_HK_CC (StreamID: 0x19AB)
+    EPS HK Request
+
+FM:
+  - FM_CONCAT (StreamID: 0x188C)
+    This command concatenates two source files into the target file. Sources must both be existing files and target must not exist. Sources and target may be on different file systems. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but copying the first source file to the target file and then appending the second source file to the target file will be performed by a lower priority child task. As such, the return value for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_COPY (StreamID: 0x188C)
+    This command copies the source file to the target file. The source must be an existing file and the target must not be a directory name. If the Overwrite command argument is TRUE, then the target may be an existing file, provided that the file is closed. If the Overwrite command argument is FALSE, then the target must not exist. The source and target may be on different file systems. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but copying the file will be performed by a lower priority child task. As such, the command result for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_CREATE_DIR (StreamID: 0x188C)
+    This command creates the source directory. Source must be a valid directory name that does not exist.
+  - FM_DECOMPRESS (StreamID: 0x188C)
+    This command invokes a CFE function to decompress the source file into the target file. Source must be an existing file and target must not exist. Source and target may be on different file systems. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but decompressing the source file into the target file will be performed by a lower priority child task. As such, the return value for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_DELETE_ALL (StreamID: 0x188C)
+    This command deletes all files in the source directory. Source must be an existing directory. Open files and sub-directories are not deleted. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but reading the directory and deleting each file will be performed by a lower priority child task. As such, the return value for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_DELETE (StreamID: 0x188C)
+    This command deletes the source file. Source must be an existing file that is not open.
+  - FM_DELETE_DIR (StreamID: 0x188C)
+    This command deletes the source directory, it does not delete the contents of the directory. Source must be a valid directory name that exists.
+  - FM_DELETE_INT (StreamID: 0x188C)
+    This is a special version of the FM_DELETE_CC command for use when the command is sent by another application, rather than from the ground. This version of the command will not generate a success event, nor will the command increment the command success counter. The intent is to avoid confusion resulting from telemetry representing the results of delete commands sent by other applications and those sent from the ground. Refer to FM_DELETE_CC command for use details.
+  - FM_GET_DIR_FILE (StreamID: 0x188C)
+    This command writes a listing of the contents of the source directory to the target file. If the target filename buffer is empty, then the default target filename FM_DIR_LIST_FILE_DEFNAME is used. The command will overwrite a previous copy of the target file, if one exists. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but reading the directory will be performed by a lower priority child task. As such, the return value for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_GET_DIR_PKT (StreamID: 0x188C)
+    This command creates a telemetry packet FM_DirListPkt_t that contains a listing of the entries in the specified directory. Since the packet will likely hold fewer entries than will be possible in a directory, the command also provides an index argument to define which entry in the directory is the first entry reported in the telemetry packet. After reading the directory list and skipping entries until reaching the index of the first entry reported, the remaining entries in the packet are filled sequentially until either the packet is full or until there are no more entries in the directory. The first entry index is zero based - thus, when the first entry index is zero the first directory entry will be the first packet entry. The number of entries per packet FM_DIR_LIST_PKT_ENTRIES is a platform configuration definition. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but reading the directory will be performed by a lower priority child task. As such, the return value for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_GET_FILE_INFO (StreamID: 0x188C)
+    This command creates an FM file information telemetry packet for the source file. The file information packet includes status that indicates whether source is a file that is open or closed, a directory, or does not exist. The file information data also includes a CRC, file size, last modify time and the source name. Because of the possibility that this command might take a very long time to complete, command argument validation will be done immediately but collecting the status data and calculating the CRC will be performed by a lower priority child task. As such, the return value for this function only refers to the result of command argument verification and being able to place the command on the child task interface queue.
+  - FM_GET_FREE_SPACE (StreamID: 0x188C)
+    This command queries the amount of free space for each of the enabled entries in the file system free space table. The data is then placed in a telemetry packet and sent to ground.
+  - FM_GET_OPEN_FILES (StreamID: 0x188C)
+    This command creates an FM open files telemetry packet. The open files packet includes the number of open files and for each open file, the name of the file and the name of the application that has the file opened.
+  - FM_MOVE (StreamID: 0x188C)
+    This command moves the source file to the target file. The source must be an existing file and the target must not be a directory name. If the Overwrite command argument is TRUE, then the target may be an existing file, provided that the file is closed. If the Overwrite command argument is FALSE, then the target must not exist. Source and target must both be on the same file system. The move command does not actually move any file data. The command modifies the file system directory structure to create a different file entry for the same file data. If the user wishes to move a file across file systems, he must first copy the file and then delete the original.
+  - FM_NOOP (StreamID: 0x188C)
+    This command performs no operation other than to generate an informational event that also contains software version data. The command is most often used as a general aliveness test by demonstrating that the application can receive commands and generate telemetry.
+  - FM_RENAME (StreamID: 0x188C)
+    This command renames the source file to the target file. Source must be an existing file and target must not exist. Source and target must both be on the same file system. The rename command does not actually move any file data. The command modifies the file system directory structure to create a different file entry for the same file data. If the user wishes to rename a file across file systems, he must first copy the file and then delete the original.
+  - FM_RESET (StreamID: 0x188C)
+    This command resets the following housekeeping telemetry: Command success counter /FM_CMDPCCommand error counter /FM_CMDECCommand warning counter /FM_WarnCtrChild cmd success counter /FM_ChildCMDPCChild cmd error counter /FM_ChildCMDECChild cmd warning counter /FM_ChildWarnCtr 
+  - FM_SET_TABLE_STATE (StreamID: 0x188C)
+    This command enables or disables a single entry in the FM file system free space table. Only table entries that are currently enabled or disabled may be modified by command. Unused table entries cannot be modified.
+  - FM_SET_FILE_PERM (StreamID: 0x188C)
+    Set Permissions of a file.
+  - FM_SEND_HK (StreamID: 0x188D)
+    Request FM HK
+
+MM:
+  - MM_DISABLE_EEPROM_WRITE (StreamID: 0x1888)
+    Disables writing to a specified EEPROM bank
+  - MM_DUMP_IN_EVENT (StreamID: 0x1888)
+    Dumps up to MM_MAX_DUMP_INEVENT_BYTES of memory in an event message
+  - MM_DUMP_MEM_TO_FILE (StreamID: 0x1888)
+    Dumps the input number of bytes from processor memory to a file
+  - MM_ENABLE_EEPROM_WRITE (StreamID: 0x1888)
+    Enables writing to a specified EEPROM bank
+  - MM_FILL_MEM (StreamID: 0x1888)
+    Reprograms processor memory with the fill pattern contained within the command message
+  - MM_LOAD_MEM_FROM_FILE (StreamID: 0x1888)
+    Reprograms processor memory with the data contained within the given input file
+  - MM_LOAD_MEM_WID (StreamID: 0x1888)
+    Reprogram processor memory with input data. Loads up to MM_MAX_UNINTERRUPTABLE_DATA data bytes into RAM with interrupts disabled
+  - MM_LOOKUP_SYM (StreamID: 0x1888)
+    Queries the system symbol table and reports the resolved address in telemetry and an informational event message
+  - MM_NOOP (StreamID: 0x1888)
+    Implements the Noop command that insures the MM task is alive
+  - MM_PEEK (StreamID: 0x1888)
+    Reads 8,16, or 32 bits of data from any given input address
+  - MM_POKE (StreamID: 0x1888)
+    Writes 8, 16, or 32 bits of data to any memory address
+  - MM_RESET (StreamID: 0x1888)
+    Resets the MM housekeeping counters
+  - MM_SYMTBL_TO_FILE (StreamID: 0x1888)
+    Saves the system symbol table to a file that can be transfered to the ground
+
+SCH:
+  - SCH_DISABLE (StreamID: 0x1895)
+    This command disables a single activity in the Schedule Definition Table.
+  - SCH_DISABLE_GROUP (StreamID: 0x1895)
+    This command disables a single group and/or a collection of Multi-Group Activities in the Schedule Definition Table.
+  - SCH_ENABLE (StreamID: 0x1895)
+    This command enables a single activity in the Schedule Definition Table.
+  - SCH_ENABLE_GROUP (StreamID: 0x1895)
+    This command enables a single group and/or a collection of Multi-Group Activities in the Schedule Definition Table.
+  - SCH_ENABLE_SYNC (StreamID: 0x1895)
+    This command allows the operator to enable processing and synchronization of the Major Frame Signal to the processing of the Schedule Definition Table.
+  - SCH_NOOP (StreamID: 0x1895)
+    This command performs no other function than to increment the command execution counter. The command may be used to verify general aliveness of the Scheduler Application.
+  - SCH_RESET (StreamID: 0x1895)
+    This command resets the following counters within the Scheduler housekeeping telemetry: Command Execution Counter ($sc_$cpu_SCH_CMDPC)Command Error Counter ($sc_$cpu_SCH_CMDEC)Schedule Activities Success Counter ($sc_$cpu_SCH_ActSuccessCtr)Schedule Activities Failure Counter ($sc_$cpu_SCH_ActFailCtr)Schedule Slots Processed Counter ($sc_$cpu_SCH_SlotProcCtr)Schedule Skipping Slots Counter ($sc_$cpu_SCH_SlotSkipCtr)Multiple Schedule Slots Processed Counter ($sc_$cpu_SCH_MultSlotCtr)Awoke in Same Slot Counter ($sc_$cpu_SCH_SameSlotCtr)Corrupted Table Data Counter ($sc_$cpu_SCH_BadTblDataCtr)Table Loads Successfully Verified Counter ($sc_$cpu_SCH_TblPassVerifyCtr)Table Loads Unsuccessfully Verified Counter ($sc_$cpu_SCH_TblFailVerifyCtr)Valid Major Frames Received Counter ($sc_$cpu_SCH_ValidMajorFrameCtr)Missed Major Frames Received Counter ($sc_$cpu_SCH_MissedMajorFrameCtr)Unexpected Major Frames Received Counter ($sc_$cpu_SCH_UnexpectedMajorFrameCtr)
+  - SCH_SEND_DIAG_TLM (StreamID: 0x1895)
+    This command generates and sends the Scheduler Application's Diagnostic Telemetry packet.
+
+SPACECOP:
+  - SPACECOP_NOOP_CC (StreamID: 0x18FE)
+    SPACECOP NOOP Command
+  - SPACECOP_RESET_COUNTERS_CC (StreamID: 0x18FE)
+    SPACECOP Reset Counters Command
+  - SPACECOP_REQUEST_HK_CC (StreamID: 0x18FF)
+    SPACECOP HK Request
+  - SPACECOP_REQUEST_IDS_CC (StreamID: 0x18FF)
+    SPACECOP IDS Request
+
+STPYLD:
+  - NOOP (StreamID: 0x19BA)
+    Generate an info event message with app version
+  - RESET_CTRS (StreamID: 0x19BA)
+    Resets HK TLM parent and child task counters
+  - STPYLD_REQUEST_HK_CC (StreamID: 0x19BB)
+    STPYLD HK Request
+
+SYSMON:
+  - NOOP (StreamID: 0x19CA)
+    Generate an info event message with app version
+  - RESET_CTRS (StreamID: 0x19CA)
+    Resets HK TLM parent and child task counters
+  - SYSMON_REQUEST_HK_CC (StreamID: 0x19CB)
+    SYSMON HK Request
+
+--------------------------------------------------------------------------------
+TELEMETRY BY TARGET
+--------------------------------------------------------------------------------
+
+CAMERA:
+  - CAMERA_HK_TLM (StreamID: None)
+    CAMERA_Report_tlm_t
+
+CFDP:
+  - DOWNLINK_FILE_PKT (StreamID: None)
+    Downlink File Packet
+
+CFS:
+  - CI_DEBUG_HKPACKET (StreamID: None)
+    Housekeeping Packet Structure
+  - CFE_TBL_HKPACKET (StreamID: None)
+    Table Services Housekeeping Packet
+  - CFE_TBL_TBLREGPACKET (StreamID: None)
+    Table Registry Info Packet
+  - CFE_ES_HKPACKET (StreamID: None)
+    Executive Services Housekeeping Packet
+  - CFE_ES_ONEAPPTLM (StreamID: None)
+    Single Application Information Packet
+  - CFE_ES_POOLSTATSTLM (StreamID: None)
+    Memory Pool Statistics Packet
+  - CFE_ES_SHELLPACKET (StreamID: None)
+    OS Shell Output Packet
+  - CFE_EVS_PACKET (StreamID: None)
+    Event Message Telemetry Packet
+  - CFE_EVS_TLMPKT (StreamID: None)
+    Event Services Housekeeping Telemetry Packet
+  - CFE_SB_HKMSG (StreamID: None)
+    Software Bus task housekeeping Packet
+  - CFE_SB_PREVSUBMSG (StreamID: None)
+    SB Previous Subscriptions Packet
+  - CFE_SB_STATMSG (StreamID: None)
+    SB Statistics Telemetry Packet
+  - CFE_SB_SUBRPRTMSG (StreamID: None)
+    SB Subscription Report Packet
+  - CFE_TIME_HKPACKET (StreamID: None)
+    Time Services Housekeeping Packet
+  - CFE_TIME_DIAGPACKET (StreamID: None)
+    Time Services Diagnostics Packet
+  - TO_DEBUG_HKPACKET (StreamID: None)
+    Housekeeping Packet Structure
+
+CS:
+  - CS_HKPACKET (StreamID: None)
+    Housekeeping Packet Structure
+
+DS:
+  - DS_HKPACKET (StreamID: None)
+    DS application housekeeping packet
+  - DS_FILEINFOPKT (StreamID: None)
+    DS application file info packet
+
+EPS:
+  - EPS_HK_TLM (StreamID: None)
+    EPS_Report_tlm_t
+
+FM:
+  - FM_DIRLISTPKT (StreamID: None)
+    Get Directory Listing telemetry packet
+  - FM_FILEINFOPKT (StreamID: None)
+    Get File Info telemetry packet
+  - FM_FREESPACEPKT (StreamID: None)
+    Get Free Space telemetry packet
+  - FM_HOUSEKEEPINGPKT (StreamID: None)
+    Housekeeping telemetry packet
+  - FM_OPENFILESPKT (StreamID: None)
+    Get Open Files telemetry packet
+
+HK:
+  - HK_HKPACKET (StreamID: None)
+    HK Application housekeeping Packet
+  - CFE_HK_COMBINED_PKT1 (StreamID: None)
+    Housekeeping Combined Packet 1
+
+HS:
+  - HS_HKPACKET (StreamID: None)
+    Housekeeping Packet Structure
+
+LC:
+  - LC_HKPACKET (StreamID: None)
+    Housekeeping Packet Structure
+
+MD:
+  - MD_DWELLPKT (StreamID: None)
+    Memory Dwell Telemetry Packet format
+  - MD_HKTLM (StreamID: None)
+    Memory Dwell HK Telemetry format
+
+MM:
+  - MM_HKPACKET (StreamID: None)
+    Housekeeping Packet Structure
+
+SC:
+  - SC_HKTLM (StreamID: None)
+    Housekeeping Packet Structure
+
+SCH:
+  - SCH_DIAGPACKET (StreamID: None)
+    Scheduler Diagnostic Telemetry format
+  - SCH_HKPACKET (StreamID: None)
+    Scheduler HK Telemetry format
+
+SPACECOP:
+  - SPACECOP_REPORT_TLM (StreamID: None)
+    SPACECOP_Report_tlm_t
+  - SPACECOP_HK_TLM (StreamID: None)
+    SPACECOP_Hk_tlm_t
+
+STPYLD:
+  - STPYLD_HK_TLM (StreamID: None)
+    STPYLD_Report_tlm_t
+
+SYSMON:
+  - SYSMON_HK_TLM (StreamID: None)
+    SYSMON_Report_tlm_t

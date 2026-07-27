@@ -1,0 +1,23 @@
+TELEMETRY CFDP DOWNLINK_FILE_PKT BIG_ENDIAN "Downlink File Packet"
+  APPEND_ID_ITEM CCSDS_APID 16 UINT 0x085C "Application ID"
+  APPEND_ITEM      SEQUENCE    16   UINT            "Packet Sequence"
+  APPEND_ITEM      PKT_LEN     16   UINT            "Length of the packet"
+  APPEND_ITEM      SECONDS     32   UINT            ""
+        UNITS Seconds sec
+  APPEND_ITEM      SUBSECS     16   UINT            ""
+        UNITS Milliseconds ms
+  # some bytes not known for what
+  APPEND_ITEM      SPARE2ALIGN 32   UINT            "Spares"
+  APPEND_ITEM PDU_TYPE 8 UINT "PDU Type (01 = Data, 02 = EOF)"
+  APPEND_ITEM DIRECTION 8 UINT "Direction (01 = Downlink, 02 == Uplink)"
+  # data_len / seq_num are written in FSW host byte order (little-endian on the
+  # Pi), like the uplink LENGTH field -> declare them LITTLE_ENDIAN.
+  APPEND_ITEM DATA_LEN 16 UINT "Number of valid bytes in FILE_DATA for this chunk" LITTLE_ENDIAN
+  APPEND_ITEM SEQ_NUM 32 UINT "0-based chunk sequence number (total chunk count on EOF)" LITTLE_ENDIAN
+  # BLOCK (raw bytes), NOT STRING: a STRING item is truncated at the first null
+  # byte, which silently drops binary/image data. BLOCK preserves all bytes.
+  # Width MUST equal FSW CFDP_DATA_CHUNK_SIZE * 8 (1024 bytes -> 8192 bits).
+  # Sized so the whole PDU fits in one UDP datagram (no IP fragmentation over WiFi).
+  APPEND_ITEM FILE_DATA 8192 BLOCK "Chunk of file data"
+  APPEND_ITEM FILENAME_DST 512 STRING "Name of file dest"
+  APPEND_ITEM FILENAME_SRC 512 STRING "Name of file src"

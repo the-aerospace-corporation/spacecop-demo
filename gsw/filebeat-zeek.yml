@@ -1,0 +1,43 @@
+# ==========================================================================
+#  Filebeat -> Logstash shipper for the Zeek CCSDS logs.
+#
+#  Ships the JSON ccsds_commands / ccsds_telemetry logs Zeek writes to a
+#  Logstash "beats" input. Install filebeat on the Zeek host, drop this in as
+#  /etc/filebeat/filebeat.yml (edit LOGSTASH_HOST), then:
+#      sudo systemctl enable --now filebeat
+#      sudo filebeat test output      # verify it can reach Logstash
+#
+#  Requires the Zeek side to emit JSON (already set in your local.zeek:
+#      redef LogAscii::use_json = T;)
+# ==========================================================================
+
+filebeat.inputs:
+  - type: filestream
+    id: zeek-ccsds
+    enabled: true
+    paths:
+      - /opt/zeek/logs/current/ccsds_commands.log
+      - /opt/zeek/logs/current/ccsds_telemetry.log
+    parsers:
+      - ndjson:
+          target: ""            # promote JSON keys to top level
+          add_error_key: true
+          overwrite_keys: true
+    fields:
+      pipeline_source: zeek-ccsds
+    fields_under_root: true
+
+# Zeek's zeekctl rotates logs hourly out of current/; filestream follows the
+# active files. If you also want the rotated archives, add their glob here.
+
+output.logstash:
+  hosts: ["LOGSTASH_HOST:5044"]
+  # For TLS to Logstash, uncomment and point at your CA:
+  # ssl.certificate_authorities: ["/etc/filebeat/certs/ca.crt"]
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7

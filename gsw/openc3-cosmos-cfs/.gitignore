@@ -1,0 +1,14 @@
+node_modules
+.pnpm-store
+
+# Build artifacts — the .gem is produced by `rake build`, not source
+*.gem
+
+# Local env / secrets (belong in the deployment, not this public plugin)
+.env
+.env.*
+
+# Test / build cruft
+coverage/
+tmp/
+*.log

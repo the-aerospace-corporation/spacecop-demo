@@ -1,0 +1,78 @@
+TELEMETRY EPS EPS_HK_TLM LITTLE_ENDIAN "EPS_Report_tlm_t"
+  APPEND_ID_ITEM CCSDS_STREAMID       16 UINT 0x09AA  "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SEQUENCE       16 UINT         "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_LENGTH         16 UINT         "CCSDS Packet Data Length" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SECONDS        32 UINT         "CCSDS Telemetry Secondary Header (seconds)" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SUBSECS        16 UINT         "CCSDS Telemetry Secondary Header (subseconds)" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SPARE          32 UINT         ""
+  APPEND_ITEM    CommandErrorCount     8 UINT         "Command Error Count"
+  APPEND_ITEM    CommandCount          8 UINT         "Command Count"
+  APPEND_ITEM    ErrorCount            8 UINT         "Error Count"
+  APPEND_ITEM    RSolarPanelV         32 FLOAT        "Right Side Solar Panel Voltage"
+  APPEND_ITEM    BSolarPanelV         32 FLOAT        "Back Side Solar Panel Voltage"
+  APPEND_ITEM    BatteryV             32 FLOAT        "Battery Voltage"
+    # Battery LEVEL indicator (3S AA NiMH): RED <3.2 critical, YELLOW 3.2-3.4 low,
+    # GREEN 3.4-4.3 nominal, YELLOW 4.3-4.5 high/charging, RED >4.5 overcharge.
+    # Tune these to the voltages you actually observe full vs empty.
+    LIMITS DEFAULT 1 ENABLED 3.2 3.4 4.3 4.5
+  APPEND_ITEM    BlankV               32 FLOAT        "Blank Voltage"
+  APPEND_ITEM    TSolarPanelV         32 FLOAT        "Top Side Solar Panel Voltage"
+  APPEND_ITEM    LSolarPanelV         32 FLOAT        "Left Side Solar Panel Voltage"
+  APPEND_ITEM    FSolarPanelV         32 FLOAT        "Front Side Solar Panel Voltage"
+  APPEND_ITEM    USolarPanelV         32 FLOAT        "Underside/Bottom Side Solar Panel Voltage"
+  APPEND_ITEM    RSolarPanelMa        32 FLOAT        "Right Side Solar Panel Current Ma"
+    # "Generating" indicator: GREEN when drawing >2 mA, YELLOW when idle/dark.
+    # If panels read GREEN in shade and YELLOW in sun, the current sign is
+    # inverted for your wiring -> use  LIMITS DEFAULT 1 ENABLED -100000 -99999 -2 100000
+    LIMITS DEFAULT 1 ENABLED -9999 2 99999 100000
+  APPEND_ITEM    BSolarPanelMa        32 FLOAT        "Back Side Solar Panel Current Ma"
+    LIMITS DEFAULT 1 ENABLED -9999 2 99999 100000
+  APPEND_ITEM    BatteryMa            32 FLOAT        "Battery Current Ma"
+  APPEND_ITEM    BlankMa              32 FLOAT        "Blank Current Ma"
+  APPEND_ITEM    TSolarPanelMa        32 FLOAT        "Top Side Solar Panel Current Ma"
+    LIMITS DEFAULT 1 ENABLED -9999 2 99999 100000
+  APPEND_ITEM    LSolarPanelMa        32 FLOAT        "Left Side Solar Panel Current Ma"
+    LIMITS DEFAULT 1 ENABLED -9999 2 99999 100000
+  APPEND_ITEM    FSolarPanelMa        32 FLOAT        "Front Side Solar Panel Current Ma"
+    LIMITS DEFAULT 1 ENABLED -9999 2 99999 100000
+  APPEND_ITEM    USolarPanelMa        32 FLOAT        "Underside/Bottom Side Solar Panel Current Ma"
+    LIMITS DEFAULT 1 ENABLED -9999 2 99999 100000
+  APPEND_ITEM    RSolarPanelP         8 UINT          "Right Side Solar Panel Present"
+  APPEND_ITEM    BSolarPanelP         8 UINT          "Back Side Solar Panel Present"
+  APPEND_ITEM    BatteryP             8 UINT          "Battery Present"
+  APPEND_ITEM    BlankP               8 UINT          "Blank Present"
+  APPEND_ITEM    TSolarPanelP         8 UINT          "Top Side Solar Panel Present"
+  APPEND_ITEM    LSolarPanelP         8 UINT          "Left Side Solar Panel Present"
+  APPEND_ITEM    FSolarPanelP         8 UINT          "Front Side Solar Panel Present"
+  APPEND_ITEM    USolarPanelP         8 UINT          "Underside/Bottom Side Solar Panel Present"
+  APPEND_ITEM    SensorCount          8 UINT          "Number of active sensors"
+  APPEND_ITEM    Spare1               8 UINT          ""
+  APPEND_ITEM    Spare2               8 UINT          ""
+  APPEND_ITEM    Spare3               8 UINT          ""
+
+  # ---- Derived / computed items (no bytes on the wire; see lib/*_conversion.py) ----
+  ITEM BatterySOC 0 0 DERIVED "Approx battery state of charge (%, from voltage)"
+    READ_CONVERSION battery_soc_conversion.py
+    UNITS Percent %
+    LIMITS DEFAULT 1 ENABLED 10 25 100 101
+  ITEM RSolarPanelPwr 0 0 DERIVED "Right panel power (mW)"
+    READ_CONVERSION solar_panel_power_conversion.py RSolarPanelV RSolarPanelMa
+    UNITS Milliwatts mW
+  ITEM BSolarPanelPwr 0 0 DERIVED "Back panel power (mW)"
+    READ_CONVERSION solar_panel_power_conversion.py BSolarPanelV BSolarPanelMa
+    UNITS Milliwatts mW
+  ITEM TSolarPanelPwr 0 0 DERIVED "Top panel power (mW)"
+    READ_CONVERSION solar_panel_power_conversion.py TSolarPanelV TSolarPanelMa
+    UNITS Milliwatts mW
+  ITEM LSolarPanelPwr 0 0 DERIVED "Left panel power (mW)"
+    READ_CONVERSION solar_panel_power_conversion.py LSolarPanelV LSolarPanelMa
+    UNITS Milliwatts mW
+  ITEM FSolarPanelPwr 0 0 DERIVED "Front panel power (mW)"
+    READ_CONVERSION solar_panel_power_conversion.py FSolarPanelV FSolarPanelMa
+    UNITS Milliwatts mW
+  ITEM USolarPanelPwr 0 0 DERIVED "Bottom panel power (mW)"
+    READ_CONVERSION solar_panel_power_conversion.py USolarPanelV USolarPanelMa
+    UNITS Milliwatts mW
+  ITEM TotalSolarPwr 0 0 DERIVED "Total solar power generated (mW)"
+    READ_CONVERSION total_solar_power_conversion.py
+    UNITS Milliwatts mW

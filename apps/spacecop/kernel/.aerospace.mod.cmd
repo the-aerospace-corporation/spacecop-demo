@@ -1,0 +1,1 @@
+cmd_/home/pi/cFS/apps/spacecop/kernel/aerospace.mod := printf '%s\n'   aerospace.o | awk '!x[$$0]++ { print("/home/pi/cFS/apps/spacecop/kernel/"$$0) }' > /home/pi/cFS/apps/spacecop/kernel/aerospace.mod

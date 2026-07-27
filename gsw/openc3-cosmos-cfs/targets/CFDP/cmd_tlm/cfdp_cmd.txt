@@ -1,0 +1,63 @@
+COMMAND CFDP NOOP BIG_ENDIAN "Generate an info event message with app version"
+#                     NAME           BITS TYPE   min VAL     max VAL    init VAL  DESCRIPTION
+  APPEND_ID_PARAMETER CCSDS_STREAMID 16   UINT   0x185A      0x185A     0x185A   "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_SEQUENCE 16   UINT   0xC000      MAX_UINT16 0xC000   "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_LENGTH   16   UINT   MIN_UINT16  MAX_UINT16 1        "CCSDS Packet Data Length" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_FC        8   UINT   MIN_UINT8   MAX_UINT8  0        "CCSDS Command Function Code"
+  APPEND_PARAMETER    CCSDS_CHECKSUM  8   UINT   MIN_UINT8   MIN_UINT8  0        "Checksum"
+
+COMMAND CFDP RESET_CTRS BIG_ENDIAN "Resets HK TLM parent and child task counters"
+#                     NAME           BITS TYPE   min VAL     max VAL    init VAL  DESCRIPTION
+  APPEND_ID_PARAMETER CCSDS_STREAMID 16   UINT   0x185A      0x185A     0x185A   "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_SEQUENCE 16   UINT   0xC000      MAX_UINT16 0xC000   "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_LENGTH   16   UINT   MIN_UINT16  MAX_UINT16 1        "CCSDS Packet Data Length" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_FC       8    UINT   MIN_UINT8   MAX_UINT8  1        "CCSDS Command Function Code"
+  APPEND_PARAMETER    CCSDS_CHECKSUM 8    UINT   MIN_UINT8   MIN_UINT8  0        "Checksum"
+
+COMMAND CFDP DOWNLOAD_FROM_SATELLITE_CC BIG_ENDIAN "Download file from Satellite"
+#                     NAME           BITS TYPE   min VAL     max VAL    init VAL              DESCRIPTION
+  APPEND_ID_PARAMETER CCSDS_STREAMID 16   UINT   0x185A      0x185A     0x185A                "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_SEQUENCE 16   UINT   0xC000      MAX_UINT16 0xC000                "CCSDS Packet Sequence Control" BIG_ENDIAN 
+  APPEND_PARAMETER    CCSDS_LENGTH   16   UINT   MIN_UINT16  MAX_UINT16 129                   "CCSDS Packet Data Length" 
+  APPEND_PARAMETER    CCSDS_FC       8    UINT   MIN_UINT8   MAX_UINT8  29                    "CCSDS Command Function Code" 
+  APPEND_PARAMETER    CCSDS_CHECKSUM 8    UINT   MIN_UINT8   MAX_UINT8  0                     "CCSDS Command Checksum"
+  APPEND_PARAMETER    DESTINATION    512  STRING                        "test.txt"            "Name to save file as"
+  APPEND_PARAMETER    SOURCE         512  STRING                        "/cf/test.txt"        "File on satellite to download (must be in /cf/ folder)"
+
+COMMAND CFDP UPLOAD_TO_SATELLITE_CC BIG_ENDIAN "Upload file to Satellite"
+#                     NAME           BITS TYPE   min VAL     max VAL    init VAL  DESCRIPTION
+  APPEND_ID_PARAMETER CCSDS_STREAMID 16   UINT   0x185A      0x185A     0x185A              "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_SEQUENCE 16   UINT   0xC000      MAX_UINT16 0xC000              "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_LENGTH   16   UINT   MIN_UINT16  MAX_UINT16 129                 "CCSDS Packet Data Length"
+  APPEND_PARAMETER CCSDS_FC          8    UINT   MIN_UINT8   MAX_UINT8  30                  "CCSDS Command Function Code"
+  APPEND_PARAMETER CCSDS_CHECKSUM    8    UINT   MIN_UINT8   MAX_UINT8  0                   "CCSDS Command Checksum"
+  APPEND_PARAMETER    SOURCE         512  STRING                        "test.txt"            "File to upload to satellite"
+  APPEND_PARAMETER    DESTINATION    512  STRING                        "/cf/test.txt"        "Name to save file as (must be in /cf/ folder)"
+
+COMMAND CFDP UPLOAD_TO_SATELLITE_DATA BIG_ENDIAN "Upload data to Satellite"
+#                     NAME           BITS TYPE   min VAL     max VAL    init VAL  DESCRIPTION
+  APPEND_ID_PARAMETER CCSDS_STREAMID 16   UINT   0x185A      0x185A     0x185A              "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_SEQUENCE 16   UINT   0xC000      MAX_UINT16 0xC000              "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_LENGTH   16   UINT   MIN_UINT16  MAX_UINT16 589                 "CCSDS Packet Data Length"
+  APPEND_PARAMETER    CCSDS_FC       8    UINT   MIN_UINT8   MAX_UINT8  31                  "CCSDS Command Function Code"
+  APPEND_PARAMETER    CCSDS_CHECKSUM 8    UINT   MIN_UINT8   MAX_UINT8  0                   "CCSDS Command Checksum"
+  APPEND_PARAMETER    LENGTH         16   UINT   MIN_UINT16  MAX_UINT16 0                   "Length of data to write" LITTLE_ENDIAN
+  APPEND_PARAMETER    PDU            8    UINT   MIN_UINT8   MAX_UINT8  1                   "1 == upload, 2 == EOF"
+  APPEND_PARAMETER    PADDING        8    UINT   MIN_UINT8   MAX_UINT8  0                   "PADDING"
+  APPEND_PARAMETER    DESTINATION    512  STRING                        "/cf/test.txt"      "Location on spacecraft to upload"
+  APPEND_PARAMETER    FILE_DATA      4096 BLOCK                         ""                  "File Data"
+  # Integrity check: on the EOF command (PDU=2) these carry the file's expected
+  # total size and CRC-32 so the FSW can verify the upload. Zero on data chunks.
+  APPEND_PARAMETER    EXPECTED_SIZE  32   UINT   MIN_UINT32  MAX_UINT32 0                   "Expected total file size (EOF only)" LITTLE_ENDIAN
+  APPEND_PARAMETER    EXPECTED_CRC   32   UINT   MIN_UINT32  MAX_UINT32 0                   "Expected CRC-32 of file (EOF only)" LITTLE_ENDIAN
+
+COMMAND CFDP RESEND_CHUNK BIG_ENDIAN "Class 2 NAK: request retransmission of one missing chunk"
+#                     NAME           BITS TYPE   min VAL     max VAL    init VAL           DESCRIPTION
+  APPEND_ID_PARAMETER CCSDS_STREAMID 16   UINT   0x185A      0x185A     0x185A             "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_SEQUENCE 16   UINT   0xC000      MAX_UINT16 0xC000             "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_PARAMETER    CCSDS_LENGTH   16   UINT   MIN_UINT16  MAX_UINT16 133                "CCSDS Packet Data Length"
+  APPEND_PARAMETER    CCSDS_FC       8    UINT   MIN_UINT8   MAX_UINT8  32                 "CCSDS Command Function Code"
+  APPEND_PARAMETER    CCSDS_CHECKSUM 8    UINT   MIN_UINT8   MAX_UINT8  0                  "CCSDS Command Checksum"
+  APPEND_PARAMETER    SEQ_NUM        32   UINT   MIN_UINT32  MAX_UINT32 0                  "0-based chunk index to resend" LITTLE_ENDIAN
+  APPEND_PARAMETER    SOURCE         512  STRING                        "/cf/test.txt"     "File on satellite to read from"
+  APPEND_PARAMETER    DESTINATION    512  STRING                        "test.txt"         "Ground filename label"

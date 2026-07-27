@@ -1,0 +1,13 @@
+/target
+/scripts/output
+*.pyc
+__pycache__/
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.cargo/config.toml
+scm_models/*
+!scm_models/.gitignore
+instance/*
+!instance/.gitignore

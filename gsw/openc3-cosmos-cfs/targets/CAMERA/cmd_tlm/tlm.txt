@@ -1,0 +1,17 @@
+TELEMETRY CAMERA CAMERA_HK_TLM LITTLE_ENDIAN "CAMERA_Report_tlm_t"
+  APPEND_ID_ITEM CCSDS_STREAMID       16 UINT 0x09DA  "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SEQUENCE       16 UINT         "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_LENGTH         16 UINT         "CCSDS Packet Data Length" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SECONDS        32 UINT         "CCSDS Telemetry Secondary Header (seconds)" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SUBSECS        16 UINT         "CCSDS Telemetry Secondary Header (subseconds)" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SPARE          32 UINT         ""
+  APPEND_ITEM    CommandErrorCount     8 UINT         "Command Error Count"
+  APPEND_ITEM    CommandCount          8 UINT         "Command Count"
+  APPEND_ITEM    ImageCounter         16 UINT         "Image Counter"
+  APPEND_ITEM    CameraAvailable       8 UINT         "Camera Available"
+  APPEND_ITEM    CaptureInProgress     8 UINT         "Capture In Progress"
+  APPEND_ITEM    LastCaptureStatus     8 UINT         "Last Capture Status"
+  APPEND_ITEM    LastImagePath        1024 STRING       "Last Image Path"
+  APPEND_ITEM    LastImageSizeBytes   32 UINT         "Last Image Size (bytes)"
+  APPEND_ITEM    LastCaptureUnixTime  32 UINT         "Last Capture Time (Unix)"
+  APPEND_ITEM    LastDeleteStatus      8 UINT         "Last Delete Status"

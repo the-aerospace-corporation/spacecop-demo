@@ -1,0 +1,26 @@
+TELEMETRY STPYLD STPYLD_HK_TLM LITTLE_ENDIAN "STPYLD_Report_tlm_t"
+  APPEND_ID_ITEM CCSDS_STREAMID       16 UINT 0x09BA  "CCSDS Packet Identification" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SEQUENCE       16 UINT         "CCSDS Packet Sequence Control" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_LENGTH         16 UINT         "CCSDS Packet Data Length" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SECONDS        32 UINT         "CCSDS Telemetry Secondary Header (seconds)" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SUBSECS        16 UINT         "CCSDS Telemetry Secondary Header (subseconds)" BIG_ENDIAN
+  APPEND_ITEM    CCSDS_SPARE          32 UINT         ""
+  APPEND_ITEM    CommandErrorCount     8 UINT         "Command Error Count"
+  APPEND_ITEM    CommandCount          8 UINT         "Command Count"
+  APPEND_ITEM    PayloadValid          8 UINT         "Payload Valid"
+  APPEND_ITEM    BMEValid              8 UINT         "BME Valid"
+  APPEND_ITEM    ImuValid              8 UINT         "IMU Valid"
+  APPEND_ITEM    GPSValid              8 UINT         "GPS Valid"
+  APPEND_ITEM    Temperature          32 FLOAT        "Temperature (Celsius)"
+  APPEND_ITEM    Pressure             32 FLOAT        "Pressure (hPA)"
+  APPEND_ITEM    Altitude             32 FLOAT        "Altitude (m)"
+  APPEND_ITEM    Humidity             32 FLOAT        "Humidity (pct)"
+  APPEND_ITEM    GyroX                32 FLOAT        "X Gyroscope (dps)"
+  APPEND_ITEM    GyroY                32 FLOAT        "Y Gyroscope (gps)"
+  APPEND_ITEM    GyroZ                32 FLOAT        "Z Gyroscope (dps)"
+  APPEND_ITEM    AccelX               32 FLOAT        "X Accelerometer (g)"
+  APPEND_ITEM    AccelY               32 FLOAT        "Y Accelerometer (g)"
+  APPEND_ITEM    AccelZ               32 FLOAT        "Z Accelerometer (g)"
+  APPEND_ITEM    GPSVal1              32 FLOAT        "GPS Val 1"
+  APPEND_ITEM    GPSVal2              32 FLOAT        "GPS Val 2"
+  APPEND_ITEM    GPSVal3              32 FLOAT        "GPS Val 3"
