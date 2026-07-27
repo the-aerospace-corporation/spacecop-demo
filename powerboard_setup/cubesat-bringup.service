@@ -1,0 +1,20 @@
+[Unit]
+Description=CubeSatSim board bring-up (lights, safe radio state, board check)
+# Wait for basic system + i2c to be up
+After=multi-user.target
+
+[Service]
+Type=simple
+# EDIT this path to wherever you cloned the repo / put the script:
+ExecStart=/usr/bin/python3 /opt/pisat/trixie-cfs/board_bringup.py
+WorkingDirectory=/opt/pisat/trixie-cfs
+# root = simplest access to /dev/gpiochip* and /dev/i2c-*. If you'd rather run
+# as a normal user, add that user to the gpio+i2c groups instead and change this.
+User=root
+Restart=on-failure
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

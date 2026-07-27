@@ -1,0 +1,65 @@
+# ============================================================================
+#  CubeSatSim hardware enablement for Raspberry Pi OS "Trixie" (Debian 13)
+#  Append this block to /boot/firmware/config.txt  (NOTE the new path on
+#  Trixie: it is /boot/firmware/config.txt, NOT /boot/config.txt)
+#
+#  Every line here enables a physical function of the CubeSatSim boards.
+#  It contains NO application logic -- it just makes the hardware usable so
+#  your cFS flight software can drive it.
+# ============================================================================
+
+# --- I2C bus 1 (hardware): INA219 solar/battery current+voltage sensors ---
+#     -> /dev/i2c-1 , sensor addresses 0x40 0x41 0x44 0x45
+dtparam=i2c_arm=on
+
+# --- I2C bus 3 (software / bit-banged): payload sensor bank (BME280, MPU6050) ---
+#     -> /dev/i2c-3 , SDA=GPIO23 SCL=GPIO24
+#     OPTIONAL in your build: with the Pico attached, the PICO reads these
+#     sensors and streams them to the Pi over UART. Bus 3 is only the FALLBACK
+#     the stock code uses when no Pico is present. Keep it (harmless) or drop it.
+dtoverlay=i2c-gpio,bus=3,i2c_gpio_delay_us=1,i2c_gpio_sda=23,i2c_gpio_scl=24
+
+# --- Hardware UART on GPIO14/15 -> /dev/ttyAMA0 : SHARED by the radio + Pico ---
+#     This ONE port is time-shared at two baud rates:
+#       * 9600   -> program the SR_FRS FM radio module (AT+DMOSETGROUP...)
+#       * 115200 -> read the Pi Pico payload (sensor string + optional JPEG)
+#
+#     IMPORTANT (Pi Zero 2 W): the good PL011 UART and the onboard Bluetooth are
+#     the SAME hardware block, so you must pick ONE of these two lines:
+#
+#       dtoverlay=disable-bt    -> Bluetooth OFF, PL011/ttyAMA0 -> header. Use this
+#                                  ONLY if you don't need onboard Bluetooth.
+#       dtoverlay=miniuart-bt   -> Bluetooth STAYS ON (moved to the mini-UART),
+#                                  PL011/ttyAMA0 still -> header for radio/Pico.
+#                                  Requires a fixed core clock -- force_turbo=1
+#                                  (set below) provides it. USE THIS if you drive
+#                                  a Bluetooth speaker/peripheral.
+#
+#     (The serial LOGIN CONSOLE must also be off -- the setup script handles that.)
+enable_uart=1
+dtoverlay=miniuart-bt
+
+# --- Analog / PWM audio out -> FM radio module microphone input ---
+#     This is the AFSK / APRS / SSTV / CW / FM audio path.
+dtparam=audio=on
+dtoverlay=audremap,enable_jack=on
+dtoverlay=pwm,pin=18,func=2
+
+# --- USB gadget (optional): headless access / g_ether over the USB data port ---
+dtoverlay=dwc2
+
+# --- Power button: momentary switch on GPIO3 ---
+#     Press while running -> clean shutdown. Press while halted -> wake/boot.
+#     This replaces the external "pi-power-button" project with a kernel-native overlay.
+dtoverlay=gpio-shutdown,gpio_pin=3,active_low=1,gpio_pull=up
+
+# --- Boot/timing hygiene for stable RF (esp. rpitx direct synthesis) ---
+disable_splash=1
+boot_delay=0
+force_turbo=1
+
+# NOTE: The stock CubeSatSim image also forces single core (maxcpus=1) on the
+# Pi Zero 2 for rpitx timing. Do NOT do that for cFS -- you want all cores for
+# the flight software. Only add maxcpus=1 (in cmdline.txt) if you actually see
+# rpitx timing glitches, and understand it will hurt cFS throughput.
+# ============================================================================

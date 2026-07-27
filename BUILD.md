@@ -126,10 +126,8 @@ SpaceCop loads it at startup and also opens `/dev/mem`, so cFS runs as **root**
 Before running on the Pi, enable the buses the apps use (I2C for `eps`, UART for
 `stpyld`, GPIO for `hw_lib`, camera for `camera`). On a fresh Trixie:
 ```bash
-sudo ../CubeSatSim/trixie-cfs/setup-trixie-hardware.sh   # + reboot
+sudo ../powerboard_setup/setup-trixie-hardware.sh   # + reboot
 ```
-See `CubeSatSim/trixie-cfs/HARDWARE_INTERFACE.md` for the pin/bus contract.
-
 ---
 
 ## 7. Run

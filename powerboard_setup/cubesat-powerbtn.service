@@ -1,0 +1,16 @@
+[Unit]
+Description=CubeSatSim hold-to-shutdown power button (GPIO3, shared with I2C)
+After=multi-user.target
+
+[Service]
+Type=simple
+# EDIT the path to match where you put the script:
+ExecStart=/usr/bin/python3 /opt/pisat/trixie-cfs/power_button_hold.py
+User=root
+Restart=on-failure
+RestartSec=2
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
