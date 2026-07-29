@@ -27,6 +27,13 @@ SET(CMAKE_SYSTEM_PROCESSOR      arm)
 SET(CMAKE_C_COMPILER            "arm-linux-gnueabihf-gcc")
 SET(CMAKE_CXX_COMPILER          "arm-linux-gnueabihf-g++")
 
+# Debian multiarch: target libs live in /usr/lib/arm-linux-gnueabihf. Without this,
+# cmake's find_library / find_package(OpenSSL) resolves to the HOST's 64-bit lib
+# (/usr/lib/aarch64-linux-gnu/libcrypto.so) and feeds that absolute path to the
+# 32-bit linker -> "file format not recognized". This points those finds at the
+# armhf multiarch dir instead.
+SET(CMAKE_LIBRARY_ARCHITECTURE  arm-linux-gnueabihf)
+
 # Configure the find commands (same policy as the stock linux toolchains)
 SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM   NEVER)
 SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY   NEVER)

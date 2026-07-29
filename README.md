@@ -13,4 +13,3 @@ packages, cloning with submodules, target architecture, and the
 Other components build separately:
 - **Ground station** (OpenC3 COSMOS + Zeek) — `gsw/README.md`
 - **SpaceCop ML** anomaly server (Rust) — `spacecop_ml/README.md`
-- **Access portal / kiosk / DEFCON hardening** — `deploy/` (`deploy/hardening/README.md`)
