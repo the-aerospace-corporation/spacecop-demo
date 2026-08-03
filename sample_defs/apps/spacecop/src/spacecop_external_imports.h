@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop
-// All rights reserved.
-//
-//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
-//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
-//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-//any warranty that the software will be error free.
-//
-//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
-//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-//documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file spacecop_external_imports.h
@@ -68,6 +52,13 @@
 #include "lc_msgids.h"      /* LC_CMD_MID     / LC_HK_TLM_MID     */
 #include "md_msgids.h"      /* MD_CMD_MID     / MD_HK_TLM_MID     */
 #include "mm_msgids.h"      /* MM_CMD_MID     / MM_HK_TLM_MID     */
+#include "mm_fcncodes.h"      /* MM_POKE_CC / MM_LOAD_MEM_*_CC / MM_DUMP/PEEK_CC */
+#include "cs_fcncodes.h"      /* CS_DISABLE_ALL_CS_CC                           */
+#include "cfe_tbl_msgids.h"   /* CFE_TBL_CMD_MID                                */
+#include "cfe_tbl_fcncodes.h" /* CFE_TBL_LOAD_CC / CFE_TBL_ACTIVATE_CC          */
+#include "md_fcncodes.h"      /* MD_JAM_DWELL_CC / MD_START_DWELL_CC            */
+#include "fm_fcncodes.h"      /* FM_DELETE_FILE_CC / FM_MOVE_FILE_CC / RENAME   */
+#include "sc_fcncodes.h"      /* SC_START_ATS_CC / SC_START_RTS_CC              */
 #include "sc_msgids.h"      /* SC_CMD_MID     / SC_HK_TLM_MID     */
 #include "sch_msgids.h"             /* SCH_CMD_MID    / SCH_HK_TLM_MID    */
 #include "ds_msgids.h"      /* DS_CMD_MID     / DS_HK_TLM_MID     */

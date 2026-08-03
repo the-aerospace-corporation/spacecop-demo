@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop - CE
-// All rights reserved.
-//
-//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
-//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
-//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-//any warranty that the software will be error free.
-//
-//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
-//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-//documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file functions_memory_mon.c
@@ -93,6 +77,8 @@
 
 #define MIRE_15 "MIRE-15"  /**< Payload memory manipulation detection */
 #define MIRE_16 "MIRE-16"  /**< Boot memory manipulation detection */
+#define BOOT_WARMUP_CHECKS   3   /**< MIRE-16: silent baseline-adopt checks after registration */
+#define BOOT_CONFIRM_CHECKS  2   /**< MIRE-16: consecutive persistent mismatches before alerting */
 #define MIRE_18 "MIRE-18"  /**< Critical memory error detection */
 
 /*=======================================================================================
@@ -169,7 +155,12 @@ typedef struct {
     uint64_t check_count;                       /**< Number of checks performed */
     uint64_t violation_count;                   /**< Number of violations detected */
     uint64_t last_violation_time;               /**< Unix timestamp of last violation */
-    
+
+    /* MIRE-16 boot de-noise: warm-up + consecutive-mismatch confirmation */
+    uint32_t warmup_checks;                     /**< Silent baseline-adopt checks remaining */
+    uint64_t pending_hash;                      /**< Candidate changed hash awaiting confirmation */
+    uint32_t pending_count;                     /**< Consecutive checks the change has persisted */
+
     /* State flags */
     int enabled;                                /**< Region is enabled for checking */
     int protected;                              /**< Using mprotect() (future use) */
@@ -384,7 +375,7 @@ static void report_violation(monitored_region_t *region, const char *violation_t
     snprintf(message, IDS_REPORT_MESSAGE_LEN,
              "[SPACECOP] IOB Detected: SPARTA ID=%s (region=%s, type=%s, "
              "address=%p, size=%zu, old_value=0x%lx, new_value=0x%lx)",
-             region->iob_id,
+             region->mire_id,
              region->name,
              violation_type,
              region->address,
@@ -395,8 +386,11 @@ static void report_violation(monitored_region_t *region, const char *violation_t
     /* Send via IDS telemetry system */
     SPACECOP_ReportIDSMsg(message);
     
-    /* Write to STIX log for correlation */
-    write_to_stix(region->name, NULL, region->iob_id);
+    /* Write to STIX log for correlation. Use mire_id (the SPARTA IOB, e.g.
+    ** "MIRE-16") -- the region's iob_id is an internal per-region label like
+    ** "-BOOT-0" that matches no SPARTA pattern, so correlation would silently
+    ** miss. */
+    write_to_stix(region->name, NULL, region->mire_id);
     
     /* Send cFE error event */
     CFE_EVS_SendEvent(2001, CFE_EVS_EventType_ERROR, "%s", message);
@@ -473,35 +467,61 @@ static int check_payload_memory(monitored_region_t *region)
 static int check_boot_memory(monitored_region_t *region)
 {
     pthread_mutex_lock(&region->lock);
-    
-    /* Compute current integrity values */
+
     uint64_t current_hash = compute_hash(region->address, region->size);
     uint32_t current_checksum = compute_checksum(region->address, region->size);
-    
-    int violation_detected = 0;
-    
-    /* Check hash */
-    if (current_hash != region->expected_hash) {
-        report_violation(region, "boot_hash_mismatch", 
-                        region->expected_hash, current_hash);
+
+    /* Warm-up: for the first few checks after registration, silently adopt
+    ** whatever we read as the baseline. Kernel rodata can still be settling just
+    ** after boot (ro_after_init, static-call / jump-label patching), and we do
+    ** not want to alert on that transient. */
+    if (region->warmup_checks > 0) {
+        region->warmup_checks--;
         region->expected_hash = current_hash;
-        violation_detected = 1;
+        region->expected_checksum = current_checksum;
+        region->pending_count = 0;
+        region->check_count++;
+        pthread_mutex_unlock(&region->lock);
+        return 0;
     }
-    
-    /* Check checksum as secondary verification */
+
+    /* Matches the baseline -- intact. Clear any in-flight candidate change. */
+    if (current_hash == region->expected_hash) {
+        region->pending_count = 0;
+        region->check_count++;
+        pthread_mutex_unlock(&region->lock);
+        return 0;
+    }
+
+    /* Changed from baseline. Require the SAME changed value to persist for
+    ** BOOT_CONFIRM_CHECKS consecutive checks before treating it as a real
+    ** modification, so a one-off transient or a flaky /dev/mem read does not
+    ** fire MIRE-16. */
+    if (region->pending_count > 0 && current_hash == region->pending_hash) {
+        region->pending_count++;
+    } else {
+        region->pending_hash = current_hash;
+        region->pending_count = 1;
+    }
+
+    if (region->pending_count < BOOT_CONFIRM_CHECKS) {
+        pthread_mutex_unlock(&region->lock);
+        return 0;   /* not yet confirmed -- wait for it to persist */
+    }
+
+    /* Confirmed persistent change -> report and re-baseline. */
+    report_violation(region, "boot_hash_mismatch",
+                     region->expected_hash, current_hash);
     if (current_checksum != region->expected_checksum) {
         report_violation(region, "boot_checksum_mismatch",
-                        region->expected_checksum, current_checksum);
-        region->expected_checksum = current_checksum;
-        violation_detected = 1;
+                         region->expected_checksum, current_checksum);
     }
-    
-    if (!violation_detected) {
-        region->check_count++;
-    }
-    
+    region->expected_hash = current_hash;
+    region->expected_checksum = current_checksum;
+    region->pending_count = 0;
+
     pthread_mutex_unlock(&region->lock);
-    return violation_detected ? -1 : 0;
+    return -1;
 }
 
 /*=======================================================================================
@@ -819,6 +839,10 @@ int CFS_RegisterMemoryRegion(void *address, size_t size,
         break;
     }
     
+    /* MIRE-16 boot regions warm up: adopt the baseline silently for the first
+    ** few checks so post-boot rodata settling doesn't fire a false alert. */
+    region->warmup_checks = (region_type == REGION_TYPE_BOOT) ? BOOT_WARMUP_CHECKS : 0;
+
     /* Initialize all integrity values */
     region->expected_hash = compute_hash(address, size);
     region->expected_checksum = compute_checksum(address, size);
@@ -935,7 +959,8 @@ void CFS_GetRegionStats(int region_id, uint64_t *checks, uint64_t *violations)
 /**
  * @brief Get memory usage of a process from /proc/[pid]/statm
  *
- * Reads the statm file to get resident set size and converts to kilobytes.
+ * Reads the first statm field (total program size, i.e. VmSize) and converts
+ * it to kilobytes.
  *
  * @param[in] pid Process ID to query
  *
@@ -1073,6 +1098,7 @@ static void Memory_Monitor_AutoDiscoverApps(void)
     
     int skipped_not_critical = 0;
     int skipped_not_executable = 0;
+    int skipped_writable = 0;
     
     #ifdef SPACECOP_MONITOR_DEBUG
     CFE_EVS_SendEvent(2100, CFE_EVS_EventType_INFORMATION,
@@ -1189,7 +1215,17 @@ static void Memory_Monitor_AutoDiscoverApps(void)
                     skipped_not_executable++;
                     break;
                 }
-                
+
+                /* Only monitor IMMUTABLE code: read-only + executable. A
+                 * writable mapping (w present, e.g. rwxp) holds mutable data
+                 * that legitimately changes between checks and would hash-
+                 * mismatch as a MIRE-15 false positive - the same reason the
+                 * boot path excludes "Kernel data"/"bss". */
+                if (strchr(perms, 'w') != NULL) {
+                    skipped_writable++;
+                    break;
+                }
+
                 /* This is a critical app's code segment - register it */
                 char region_name[128];
                 snprintf(region_name, sizeof(region_name), "%s_code_%lx", 
@@ -1222,6 +1258,7 @@ static void Memory_Monitor_AutoDiscoverApps(void)
     printf("[SPACECOP] Regions registered:        %d\n", regions_registered);
     printf("[SPACECOP] Skipped (not critical):    %d\n", skipped_not_critical);
     printf("[SPACECOP] Skipped (not executable):  %d\n", skipped_not_executable);
+    printf("[SPACECOP] Skipped (writable):        %d\n", skipped_writable);
     #endif
     
     if (regions_registered == 0) {
@@ -1289,14 +1326,15 @@ static void Memory_Monitor_AutoDiscoverBootMemory(void)
             
             size_t size = end_addr - start_addr + 1;
             
-            /* Only monitor IMMUTABLE boot/kernel segments. "Kernel data"
-             * (.data) and "Kernel bss" (.bss) hold mutable kernel globals that
-             * legitimately change on every check - hashing them produced a
-             * constant MIRE-16 boot_hash_mismatch false positive. ".text"
-             * (Kernel code) and ".rodata" are read-only at runtime, so a hash
-             * change there is a genuine boot-memory integrity violation. */
-            if (strstr(name, "Kernel code") != NULL ||
-                strstr(name, "Kernel rodata") != NULL) {
+            /* Only monitor "Kernel rodata". This used to also include "Kernel
+             * code" (.text), but a RUNNING kernel legitimately rewrites its own
+             * .text at runtime -- static keys / jump labels, ftrace, alternatives,
+             * kprobes -- so hashing it produced a stream of MIRE-16 false
+             * positives (BOOT-0). (".data"/".bss" were already excluded for the
+             * same mutability reason.) .rodata is far more stable; any residual
+             * post-boot settling is absorbed by the warm-up + consecutive-
+             * mismatch gating in check_boot_memory(). */
+            if (strstr(name, "Kernel rodata") != NULL) {
                 
                 /* Skip if too large (probably full System RAM, not specific boot code) */
                 if (size > 50 * 1024 * 1024) {  /* Skip regions > 50MB */

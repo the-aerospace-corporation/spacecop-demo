@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop
-// All rights reserved.
-//
-// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
-// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
-// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-// any warranty that the software will be error free.
-//
-// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
-// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-// documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file sparta_stix.c
@@ -515,7 +499,7 @@ void SPACECOP_SendHeartbeat(void)
  * @post STIX bundle written to file (if STIX alert)
  * @post EVS events generated for status
  *
- * @note Heartbeat messages logged but not stored
+ * @note Only STIX alerts are handled; non-STIX (e.g. heartbeat) messages are ignored
  * @note File storage may fail if disk full
  * @note Timestamps used for unique filenames
  *
@@ -576,7 +560,6 @@ void SPACECOP_ProcessPeerAlert(const CFE_MSG_Message_t *MsgPtr)
  * 4. Create ISO 8601 timestamp
  * 5. Build artifact-appropriate STIX bundle
  * 6. Write bundle to /cf/logs/stix_log.json
- * 7. Optionally transmit via software bus
  *
  * **Parameter Requirements by Artifact Type:**
  * @code
@@ -727,7 +710,7 @@ void SPACECOP_ProcessPeerAlert(const CFE_MSG_Message_t *MsgPtr)
  * @see escape_json_string for JSON encoding
  * @see generate_uuid_v4_secure for UUID generation
  * @see FindIoB for IOB database lookup
- * @see SPACECOP_SendStixAlert for optional transmission
+ * @see SPACECOP_SendStixAlert for transmitting bundles over the software bus
  */
 int write_to_stix(const char *file_path, const unsigned char file_hash[SHA256_DIGEST_LENGTH], const char *iob_id) 
 {

@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop
-// All rights reserved.
-//
-//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
-//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
-//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-//any warranty that the software will be error free.
-//
-//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
-//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-//documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file spacecop_app.h
@@ -122,8 +106,30 @@
  * conditions but increases memory usage.
  * 
  * @note Value must be between 1 and OS_QUEUE_MAX_DEPTH
+ * @note Must also be <= CFE_PLATFORM_SB_MAX_PIPE_DEPTH (50 in this build).
+ *       CFE_SB_CreatePipe() rejects a deeper request with CFE_SB_BAD_ARGUMENT
+ *       (0xCA000003) "Bad Input Arg ... depth=N,maxdepth=50". 50 is the deepest
+ *       allowed here; raise CFE_PLATFORM_SB_MAX_PIPE_DEPTH first if more is
+ *       needed mission-wide.
  */
-#define SPACECOP_PIPE_DEPTH            32
+#define SPACECOP_PIPE_DEPTH            50
+
+/**
+ * @brief Per-MsgId message limit used for all SpaceCop subscriptions.
+ *
+ * The max number of messages of a SINGLE MsgId allowed to sit queued on a pipe
+ * at once. Plain CFE_SB_Subscribe() uses the cFE default of
+ * CFE_PLATFORM_SB_DEFAULT_MSG_LIMIT (4), which is too low for monitored
+ * high-rate / bursty streams and produces "Msg Limit Err" events (the SB drops
+ * the excess for our pipe -- the message still reaches its real destination, we
+ * just miss monitoring it). SpaceCop subscribes with CFE_SB_SubscribeEx() using
+ * this value instead. Must be <= SPACECOP_PIPE_DEPTH.
+ *
+ * NOTE: raising this absorbs BURSTS; a sustained publish rate faster than the
+ * pipe is drained still needs the drain itself sped up (see the ML monitor
+ * path). Tune here without touching each subscription call.
+ */
+#define SPACECOP_MSG_LIMIT            16
 
 /*=======================================================================================
 ** Type Definitions

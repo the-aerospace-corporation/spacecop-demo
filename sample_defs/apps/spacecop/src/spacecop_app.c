@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop
-// All rights reserved.
-//
-//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
-//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
-//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-//any warranty that the software will be error free.
-//
-//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
-//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-//documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file spacecop_app.c
@@ -355,13 +339,23 @@ void SPACECOP_AppMain(void)
     CFE_ES_TaskId_t task_id3 = 49444;
     CFE_ES_CreateChildTask(&task_id3, "SCCmdRun", RunCmdTable, NULL, 8192, 50, 0);
 
+    /* Set up the ML bridge sockets BEFORE starting the ML tasks that use them,
+    ** so RunMLResp's accept() never runs on an unset socket (fd 0 = stdin, which
+    ** gives "Socket operation on non-socket" / ENOTSOCK). */
+    MLBridge_InitSockets();
+
     /* Create child task for ML telemetry forwarding */
     CFE_ES_TaskId_t task_id4 = 49445;
-    CFE_ES_CreateChildTask(&task_id4, "SCMLRun", RunMLTable, NULL, 8192, 50, 0);
+    /* Priority 60: high enough that this task actually gets scheduled to DRAIN
+    ** MonitorMLPipe (at 130 it was starved -> "Pipe Overflow"). Because the
+    ** forward send is now non-blocking, this task is bursty (drain, then block
+    ** on the empty pipe), so it does not sustainably starve the main task. */
+    CFE_ES_CreateChildTask(&task_id4, "SCMLRun", RunMLTable, NULL, 8192, 60, 0);
 
     /* Create child task for ML alert reception */
     CFE_ES_TaskId_t task_id5 = 49446;
-    CFE_ES_CreateChildTask(&task_id5, "SCMLRep", RunMLResp, NULL, 8192, 50, 0);
+    /* Priority 130 (below the main task's 81): ML alert reception is best-effort. */
+    CFE_ES_CreateChildTask(&task_id5, "SCMLRep", RunMLResp, NULL, 8192, 130, 0);
 
     /*
     ** Main application loop
@@ -650,7 +644,7 @@ int32 SPACECOP_AppInit(void)
         if (current->enableML) {
             /* Subscribe to ML pipe for ML-based monitoring */
             printf("[SPACECOP] Subscribing to ML\n");
-            status = CFE_SB_Subscribe(current->ActionOnMid, SPACECOP_AppData.MonitorMLPipe);
+            status = CFE_SB_SubscribeEx(current->ActionOnMid, SPACECOP_AppData.MonitorMLPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
             if (status != CFE_SUCCESS)
             {
                 #ifdef SPACECOP_MONITOR_DEBUG
@@ -661,7 +655,7 @@ int32 SPACECOP_AppInit(void)
             }
         } else {
             /* Subscribe to command pipe for rule-based monitoring */
-            status = CFE_SB_Subscribe(current->ActionOnMid, SPACECOP_AppData.MonitorCmdPipe);
+            status = CFE_SB_SubscribeEx(current->ActionOnMid, SPACECOP_AppData.MonitorCmdPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
             if (status != CFE_SUCCESS)
             {
                 #ifdef SPACECOP_MONITOR_DEBUG
@@ -697,7 +691,7 @@ int32 SPACECOP_AppInit(void)
                           CFE_SB_MsgIdToValue(current->ActionOnMid), 
                           CFE_SB_MsgIdToValue(current->DeactivateOnMid));
                     #endif
-                    status = CFE_SB_Subscribe(current->DeactivateOnMid, SPACECOP_AppData.MonitorCmdPipe); 
+                    status = CFE_SB_SubscribeEx(current->DeactivateOnMid, SPACECOP_AppData.MonitorCmdPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
                     if (status != CFE_SUCCESS)
                     {
                         #ifdef SPACECOP_MONITOR_DEBUG
@@ -725,7 +719,7 @@ int32 SPACECOP_AppInit(void)
     /*
     ** Subscribe to ground commands
     */
-    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(SPACECOP_CMD_MID), SPACECOP_AppData.CmdPipe);
+    status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(SPACECOP_CMD_MID), SPACECOP_AppData.CmdPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
     if (status != CFE_SUCCESS)
     {
         CFE_EVS_SendEvent(SPACECOP_SUB_CMD_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -737,7 +731,7 @@ int32 SPACECOP_AppInit(void)
     /*
     ** Subscribe to housekeeping (hk) message requests
     */
-    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(SPACECOP_REQ_HK_MID), SPACECOP_AppData.CmdPipe);
+    status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(SPACECOP_REQ_HK_MID), SPACECOP_AppData.CmdPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
     if (status != CFE_SUCCESS)
     {
         CFE_EVS_SendEvent(SPACECOP_SUB_REQ_HK_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -749,7 +743,7 @@ int32 SPACECOP_AppInit(void)
     /*
     ** Subscribe to CTI sharing messages from peer SpaceCop instances
     */
-    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(SPACECOP_CTI_SHARE_MID), SPACECOP_AppData.CmdPipe);
+    status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(SPACECOP_CTI_SHARE_MID), SPACECOP_AppData.CmdPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
     if (status != CFE_SUCCESS)
     {
         CFE_EVS_SendEvent(SPACECOP_SUB_REQ_HK_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -761,7 +755,7 @@ int32 SPACECOP_AppInit(void)
     /*
     ** Subscribe to heartbeat messages
     */
-    status = CFE_SB_Subscribe(CFE_SB_ValueToMsgId(SPACECOP_HB_MID), SPACECOP_AppData.CmdPipe);
+    status = CFE_SB_SubscribeEx(CFE_SB_ValueToMsgId(SPACECOP_HB_MID), SPACECOP_AppData.CmdPipe, CFE_SB_DEFAULT_QOS, SPACECOP_MSG_LIMIT);
     if (status != CFE_SUCCESS)
     {
         CFE_EVS_SendEvent(SPACECOP_SUB_REQ_HK_ERR_EID, CFE_EVS_EventType_ERROR,
@@ -784,11 +778,10 @@ int32 SPACECOP_AppInit(void)
     /* Initialize mutex for thread-safe IDS reporting */
     SPACECOP_InitReportLock();
 
-    /* Initialize ML bridge UDP sockets */
-    MLBridge_InitSockets();
+    /* (ML bridge sockets are initialized earlier, before the ML child tasks.) */
 
-    /* 
-    ** Always reset all counters during application initialization 
+    /*
+    ** Always reset all counters during application initialization
     */
     SPACECOP_ResetCounters();
 
@@ -1130,7 +1123,7 @@ int32 SPACECOP_VerifyCmdLength(CFE_MSG_Message_t * msg, uint16 expected_length)
 
         /* Generate error event with diagnostic information */
         CFE_EVS_SendEvent(SPACECOP_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
-           "Invalid msg length: ID = 0x%X,  CC = %d, Len = %ld, Expected = %d",
+           "Invalid msg length: ID = 0x%X,  CC = %d, Len = %d, Expected = %d",
               CFE_SB_MsgIdToValue(msg_id), cmd_code, actual_length, expected_length);
 
         status = OS_ERROR;

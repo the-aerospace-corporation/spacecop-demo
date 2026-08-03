@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop - CE
-// All rights reserved.
-//
-//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
-//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
-//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-//any warranty that the software will be error free.
-//
-//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
-//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-//documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file ml_interface.c
@@ -29,7 +13,7 @@
  * - Converts binary telemetry to hexadecimal format
  * - Sends via TCP socket to ML server (port 9111)
  * - Automatic reconnection on connection loss
- * - Retry logic with exponential backoff
+ * - Retry logic with fixed reconnection intervals (see Error Handling below)
  *
  * **Alert Reception (ML Server → SpaceCop):**
  * - Listens for JSON-formatted alerts on TCP port 9112
@@ -54,7 +38,7 @@
  * - TCP sockets (not UDP) for reliable delivery
  * - Separate send and receive sockets
  * - Blocking I/O on receive socket (runs in dedicated thread/task)
- * - Non-blocking send with automatic reconnection
+ * - Blocking send with automatic reconnection
  * - JSON parsing using simple string extraction
  * - IOB mapping via configuration table
  *
@@ -72,13 +56,24 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
+#include <stdlib.h>
+#include <dirent.h>
+
+/* Minimum seconds between ML-sender reconnect attempts on the telemetry drain
+** path. Bounds reconnect cost so a down/slow ML server can never stall the
+** drain (which would overflow MonitorMLPipe and starve higher-priority work). */
+#define ML_RECONNECT_MIN_SEC 5
 
 /*=======================================================================================
 ** Global Variables
 **=======================================================================================*/
 
 /** @brief Global ML Bridge application data */
-MLBridge_AppData_t MLBridge_AppData;
+/* Sockets start at -1 (not the zero-initialized 0, which is a live fd = stdin).
+** A 0 here makes the "recv_sockfd < 0" guard below pass and accept() run on
+** stdin -> "Socket operation on non-socket" (ENOTSOCK). */
+MLBridge_AppData_t MLBridge_AppData = { .send_sockfd = -1, .recv_sockfd = -1 };
 
 /**
  * @brief ML monitor configuration table
@@ -389,7 +384,10 @@ static int32_t MLBridge_ReconnectSender(void)
 {
     struct sockaddr_in server_addr;
     int retry_count = 0;
-    const int MAX_RETRIES = 30;
+    /* Single fast attempt: connect() to localhost fails immediately when the ML
+    ** server is down (ECONNREFUSED), so we never block here. Callers on the drain
+    ** path rate-limit how often they invoke this (ML_RECONNECT_MIN_SEC). */
+    const int MAX_RETRIES = 1;
     
     /* Close existing socket if open */
     if (MLBridge_AppData.send_sockfd >= 0) {
@@ -405,7 +403,6 @@ static int32_t MLBridge_ReconnectSender(void)
             printf("[SPACECOP] Failed to create sender socket: %s\n", strerror(errno));
             fflush(stdout);
             retry_count++;
-            sleep(10);
             continue;
         }
         
@@ -448,6 +445,56 @@ static int32_t MLBridge_ReconnectSender(void)
 ** Public Socket Communication Functions
 **=======================================================================================*/
 
+/*
+ * Reclaim ML_RECV_PORT if a previous instance of this app leaked the listening
+ * socket within the SAME process. cFS runs all apps in one process, so after an
+ * app reload force-deletes our tasks (before MLBridge_Cleanup could run), the
+ * orphaned listener fd survives in /proc/self/fd -- but its number is lost, so a
+ * plain close() can't reach it and bind() keeps failing "Address already in use"
+ * (SO_REUSEADDR does NOT override a live listener). Walk our fd table, find any
+ * AF_INET *listening* socket bound to `port`, and close it. Returns count closed.
+ * A holder in a DIFFERENT process cannot be reclaimed here -- that needs the
+ * stale process to be killed.
+ */
+static int MLBridge_ReclaimLeakedPort(uint16_t port)
+{
+    DIR *d = opendir("/proc/self/fd");
+    if (d == NULL) {
+        return 0;
+    }
+
+    int closed = 0;
+    struct dirent *ent;
+    while ((ent = readdir(d)) != NULL) {
+        int fd = atoi(ent->d_name);
+        if (fd <= 2) {
+            continue;   /* skip stdio, and "."/".." (atoi -> 0) */
+        }
+
+        struct sockaddr_in sa;
+        socklen_t salen = sizeof(sa);
+        if (getsockname(fd, (struct sockaddr *)&sa, &salen) != 0) {
+            continue;   /* not a socket, or not bound */
+        }
+        if (sa.sin_family != AF_INET || ntohs(sa.sin_port) != port) {
+            continue;
+        }
+
+        /* Only close a *listening* socket -- not an accepted connection that
+        ** merely shares the local port 9112. */
+        int is_listener = 0;
+        socklen_t optlen = sizeof(is_listener);
+        if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &is_listener, &optlen) == 0
+            && is_listener) {
+            close(fd);
+            closed++;
+        }
+    }
+
+    closedir(d);
+    return closed;
+}
+
 /**
  * @brief Initialize TCP sockets for ML communication
  *
@@ -476,6 +523,34 @@ int32_t MLBridge_InitSockets(void)
     ** Initialize Receiver Socket (Port 9112)
     **=======================================================================================*/
     
+    /* Idempotent: close any sockets left over from a previous init BEFORE
+    ** creating new ones. Without this, re-entering InitSockets (after an app
+    ** reload, or when the recv path re-initializes) overwrites recv_sockfd with
+    ** a fresh socket while the old one still holds ML_RECV_PORT -- so bind()
+    ** fails "Address already in use" and the old listener is leaked with its fd
+    ** lost, wedging port 9112 until the process exits. Close-then-recreate lets
+    ** us reclaim the port cleanly. */
+    if (MLBridge_AppData.recv_sockfd >= 0) {
+        close(MLBridge_AppData.recv_sockfd);
+        MLBridge_AppData.recv_sockfd = -1;
+    }
+    if (MLBridge_AppData.send_sockfd >= 0) {
+        close(MLBridge_AppData.send_sockfd);
+        MLBridge_AppData.send_sockfd = -1;
+    }
+
+    /* Reclaim a listener leaked by a previous instance whose fd we no longer
+    ** track (e.g. an app reload that force-deleted our tasks). Without this,
+    ** bind() below fails "Address already in use" and SO_REUSEADDR can't help. */
+    {
+        int reclaimed = MLBridge_ReclaimLeakedPort(ML_RECV_PORT);
+        if (reclaimed > 0) {
+            printf("[SPACECOP] Reclaimed %d leaked listener(s) on port %d\n",
+                   reclaimed, ML_RECV_PORT);
+            fflush(stdout);
+        }
+    }
+
     /* Create receiver socket */
     MLBridge_AppData.recv_sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (MLBridge_AppData.recv_sockfd < 0) {
@@ -496,6 +571,7 @@ int32_t MLBridge_InitSockets(void)
             close(MLBridge_AppData.send_sockfd);
         }
         close(MLBridge_AppData.recv_sockfd);
+        MLBridge_AppData.recv_sockfd = -1;
         return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
     
@@ -514,17 +590,19 @@ int32_t MLBridge_InitSockets(void)
             close(MLBridge_AppData.send_sockfd);
         }
         close(MLBridge_AppData.recv_sockfd);
+        MLBridge_AppData.recv_sockfd = -1;
         return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
     
     /* Start listening with backlog of 1 */
-    if (listen(MLBridge_AppData.recv_sockfd, 1) < 0) {
+    if (listen(MLBridge_AppData.recv_sockfd, 5) < 0) {
         CFE_EVS_SendEvent(0, CFE_EVS_EventType_ERROR, 
                          "Failed to listen on port %d: %s", ML_RECV_PORT, strerror(errno));
         if (MLBridge_AppData.send_sockfd >= 0) {
             close(MLBridge_AppData.send_sockfd);
         }
         close(MLBridge_AppData.recv_sockfd);
+        MLBridge_AppData.recv_sockfd = -1;
         return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
     
@@ -624,45 +702,26 @@ int32_t MLBridge_InitSockets(void)
 int32_t MLBridge_SendRawHex(const uint8_t *data, size_t length, CFE_SB_MsgId_t msg_id)
 {
     static char hex_buffer[8192];
+    static time_t last_reconnect_attempt = 0;
     size_t hex_offset = 0;
     int bytes_sent;
-    
-    fflush(stdout);
-    
-    /* Check if socket is valid */
+
+    /* Best-effort forward on the ML drain task -- it must NEVER stall. A stall
+    ** backs up MonitorMLPipe ("Pipe Overflow") and, because this task outranks
+    ** the main task, also starves command/HK processing. If the send socket is
+    ** down, attempt to reconnect at most once every ML_RECONNECT_MIN_SEC and
+    ** otherwise drop this sample. */
     if (MLBridge_AppData.send_sockfd < 0) {
-        printf("[SPACECOP] ERROR: Invalid socket, attempting reconnection...\n");
-        fflush(stdout);
+        time_t now = time(NULL);
+        if ((now - last_reconnect_attempt) < ML_RECONNECT_MIN_SEC) {
+            return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;   /* not connected -- drop, don't stall */
+        }
+        last_reconnect_attempt = now;
         if (MLBridge_ReconnectSender() != CFE_SUCCESS) {
             return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
         }
     }
-    
-    /* Check if socket is still connected using getsockopt() */
-    int error = 0;
-    socklen_t len = sizeof(error);
-    int retval = getsockopt(MLBridge_AppData.send_sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
-    
-    if (retval != 0) {
-        printf("[SPACECOP] ERROR: getsockopt failed: %s\n", strerror(errno));
-        fflush(stdout);
-        printf("[SPACECOP] Attempting reconnection...\n");
-        fflush(stdout);
-        if (MLBridge_ReconnectSender() != CFE_SUCCESS) {
-            return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
-        }
-    }
-    
-    if (error != 0) {
-        printf("[SPACECOP] ERROR: Socket has error: %s\n", strerror(error));
-        fflush(stdout);
-        printf("[SPACECOP] Attempting reconnection...\n");
-        fflush(stdout);
-        if (MLBridge_ReconnectSender() != CFE_SUCCESS) {
-            return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
-        }
-    }
-    
+
     /* Validate data pointer */
     if (data == NULL) {
         printf("[SPACECOP] ERROR: data is NULL\n");
@@ -689,27 +748,21 @@ int32_t MLBridge_SendRawHex(const uint8_t *data, size_t length, CFE_SB_MsgId_t m
     hex_offset++;
     hex_buffer[hex_offset] = '\0';
     
-    /* Attempt to send */
-    bytes_sent = send(MLBridge_AppData.send_sockfd, hex_buffer, hex_offset, 0);
-    
+    /* Non-blocking send: a slow/backed-up ML consumer must not block this task. */
+    bytes_sent = send(MLBridge_AppData.send_sockfd, hex_buffer, hex_offset, MSG_DONTWAIT);
+
     /* Handle send errors */
     if (bytes_sent < 0) {
-        /* Check if it's a connection error */
-        if (errno == EPIPE || errno == ECONNRESET || errno == ENOTCONN || errno == EBADF) {
-            /* Connection lost - attempt reconnection */
-            if (MLBridge_ReconnectSender() == CFE_SUCCESS) {
-                /* Retry send after successful reconnection */
-                bytes_sent = send(MLBridge_AppData.send_sockfd, hex_buffer, hex_offset, 0);
-                
-                if (bytes_sent < 0) {
-                    return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
-                }
-            } else {
-                return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
-            }
-        } else {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            /* Socket buffer full -- ML consumer is behind. Drop this sample
+            ** rather than blocking; the next sample will try again. */
             return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
         }
+        /* Connection-level error: tear the socket down so the rate-limited
+        ** reconnect at the top re-establishes it on a later call. */
+        close(MLBridge_AppData.send_sockfd);
+        MLBridge_AppData.send_sockfd = -1;
+        return CFE_STATUS_EXTERNAL_RESOURCE_FAIL;
     }
     
     /* Warn on partial send */
@@ -1020,17 +1073,25 @@ void MLBridge_CheckForResponse(void)
     
     fflush(stdout);
     
-    /* Validate receive socket */
+    /* Do NOT (re)initialize the socket here. MLBridge_InitSockets() is called
+    ** exactly ONCE, at app init. Re-initializing from this accept path races
+    ** with app init and re-binds ML_RECV_PORT ("initializing 9112 multiple
+    ** times"). If the listener isn't up yet, just wait -- RunMLResp calls us
+    ** again; accept() below only runs on a valid fd thanks to the loop guard. */
     if (MLBridge_AppData.recv_sockfd < 0) {
-        printf("[SPACECOP] ERROR: Invalid recv socket\n");
-        fflush(stdout);
+        sleep(1);
         return;
     }
-    
+
     /* Main loop to handle reconnections */
     while (1) {
+        /* Defensive: never accept() on a torn-down/invalid socket. */
+        if (MLBridge_AppData.recv_sockfd < 0) {
+            sleep(1);
+            return;
+        }
         /* Wait for ML client to connect (blocking) */
-        client_sockfd = accept(MLBridge_AppData.recv_sockfd, 
+        client_sockfd = accept(MLBridge_AppData.recv_sockfd,
                               (struct sockaddr*)&client_addr, 
                               &client_len);
         
@@ -1086,13 +1147,13 @@ void MLBridge_CheckForResponse(void)
             }
         }
         
-        /* Close client socket before accepting new connection */
+        /* Close client socket, then go straight back to accept() so the ML
+        ** server's next connection is picked up immediately. A sleep here left
+        ** us deaf to reconnects for a full second, so the client saw refused/
+        ** backlogged connects to 9112 and kept retrying. */
         close(client_sockfd);
         client_sockfd = -1;
-        
         fflush(stdout);
-        
-        sleep(1);
     }
 }
 
@@ -1114,11 +1175,13 @@ void MLBridge_Cleanup(void)
 {
     if (MLBridge_AppData.send_sockfd >= 0) {
         close(MLBridge_AppData.send_sockfd);
+        MLBridge_AppData.send_sockfd = -1;
     }
-    
+
     if (MLBridge_AppData.recv_sockfd >= 0) {
         close(MLBridge_AppData.recv_sockfd);
+        MLBridge_AppData.recv_sockfd = -1;
     }
-    
+
     CFE_EVS_SendEvent(0, CFE_EVS_EventType_INFORMATION, "MLBridge App Terminated");
 }

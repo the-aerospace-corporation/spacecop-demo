@@ -1,21 +1,5 @@
 // Copyright © 2026 Aerospace Corporation
-// Project Title: SpaceCop
-// All rights reserved.
-//
-//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
-//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
-//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
-//any warranty that the software will be error free.
-//
-//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
-//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
-//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
-//documentation or services provided hereunder
-//
-// For any questions, please contact:
-// Randi Tinney (randi.j.tinney@aero.org)
-// Charles Tucker (charles.tucker@aero.org)
-// Brandon Bailey (brandon.bailey@aero.org)
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * @file spacecop_registry.c
@@ -899,33 +883,18 @@ static int32 INVOKE_TlmDownlinkDelay(const ArgBlob* args, uint8_t* ret_buf, uint
 ** Machine Learning Integration Functions
 **=======================================================================================*/
 
-/** @brief Concurrency control flag for ML monitor */
-static int mlmonitor_running = 0;
-
 /**
- * @brief Start ML anomaly detection monitoring
+ * @brief Enable ML anomaly monitoring for an IOB
  *
- * Initializes and starts a child task that monitors for ML-detected anomalies.
- * The task continuously checks for alerts from the ML server.
- *
- * **Operation:**
- * 1. Toggle ML monitoring for specified IOB
- * 2. Create child task for continuous monitoring
- * 3. Task polls ML bridge for incoming alerts
- * 4. Processes and reports ML-detected anomalies
- *
- * **Child Task:**
- * - Name: "MLMonitor"
- * - Stack: 8192 bytes
- * - Priority: 50
- * - Runs continuously until app shutdown
- *
- * **Concurrency:**
- * Only one instance can run. Uses static flag to prevent multiple tasks.
+ * Toggles ML monitoring for the specified IOB. The ML alert receive loop
+ * (MLBridge_CheckForResponse) is NOT started here -- it is owned by the
+ * dedicated RunMLResp child task, created once at app init and always running.
+ * This action only updates which IOB is ML-monitored, so a rule may invoke it
+ * repeatedly without spawning duplicate accept() loops on ML_RECV_PORT (9112).
  *
  * **Usage in Rules:**
  * @code
- * (ml-monitor)  // Start ML monitoring
+ * (ml-monitor)  // Enable ML monitoring for this IOB
  * @endcode
  *
  * @param[in] args Argument blob containing:
@@ -934,43 +903,27 @@ static int mlmonitor_running = 0;
  * @param[in] ret_buf_len Return buffer length (unused)
  * @param[out] ret_len Return length (unused)
  *
- * @return int32 CFE_SUCCESS on success, error code on task creation failure
+ * @return int32 OS_SUCCESS
  *
- * @note Creates long-running child task
- * @note Requires ML bridge initialized
- * @note Only one instance allowed per application
+ * @note Does NOT create a task; the accept loop runs in RunMLResp.
+ * @note Requires the ML bridge initialized (InitSockets at app init).
  *
- * @see MLBridge_CheckForResponse() in ml_interface.c
+ * @see MLBridge_CheckForResponse() in ml_interface.c (run by RunMLResp)
  */
 static int32 INVOKE_MLMonitor(const ArgBlob* args, uint8_t* ret_buf, uint16_t ret_buf_len, uint16_t* ret_len)
 {
-	/* Configure ML monitoring for this IOB */
+	(void)ret_buf;
+	(void)ret_buf_len;
+	(void)ret_len;
+
+	/* Configure which IOB is ML-monitored. The ML alert receive loop
+	** (MLBridge_CheckForResponse) is owned by the dedicated RunMLResp child
+	** task -- created once at app init and always running -- so do NOT spawn a
+	** second task running it here. Two tasks accept()ing on ML_RECV_PORT (9112)
+	** race on socket setup and re-bind the port repeatedly. */
 	Toggle_MLMonitor(args->iob_id);
-	
-	int32 status = OS_SUCCESS;
-	
-	/* Check if ML monitor task already running */
-	if (mlmonitor_running == 0)
-	{
-		mlmonitor_running = 1;
-		
-		/* Create child task for ML monitoring */
-		CFE_ES_TaskId_t task_id = 1097;
-		printf("Starting task ML monitor\n");
 
-		status = CFE_ES_CreateChildTask(&task_id, "MLMonitor", 
-		                                MLBridge_CheckForResponse, NULL, 
-		                                8192, 50, 0);
-
-		if (status != OS_SUCCESS)
-		{
-			CFE_EVS_SendEvent(1001, CFE_EVS_EventType_ERROR, 
-			                 "Unable to create ML task in SPACECOP_TRIGGER");
-			mlmonitor_running = 0;
-		}
-	}
-	
-	return status;
+	return OS_SUCCESS;
 }
 
 /*=======================================================================================

@@ -5,8 +5,76 @@
 #include "cfe_tbl_filedef.h"
 
 CommandMonitorEntryTable_t SPACECOP_CommandMonitorTable = {
-	.CommandMonitorEntryCount=39,
+	.CommandMonitorEntryCount=54,
 	.CommandMonitorEntries={
+		/* ================================================================
+		 * High-impact commands. Previously blind: SpaceCop only watched
+		 * each MID at CommandCode 0 (NOOP), so the actual dangerous command
+		 * codes (arbitrary memory write, table load, checksum disable) went
+		 * undetected. The matcher is exact (MID, CommandCode), so each
+		 * dangerous code needs its own entry. All fire an immediate alert.
+		 * ================================================================ */
+		{ /* MM arbitrary memory write (the "I win" primitive) */
+			.Command=1, .ActionOnMid={MM_CMD_MID}, .ActionOnCommandCode=MM_POKE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* MM bulk memory write (interrupts disabled) */
+			.Command=1, .ActionOnMid={MM_CMD_MID}, .ActionOnCommandCode=MM_LOAD_MEM_WID_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* MM load memory image from file */
+			.Command=1, .ActionOnMid={MM_CMD_MID}, .ActionOnCommandCode=MM_LOAD_MEM_FROM_FILE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* MM dump memory to file (exfil) */
+			.Command=1, .ActionOnMid={MM_CMD_MID}, .ActionOnCommandCode=MM_DUMP_MEM_TO_FILE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* MM memory read / recon */
+			.Command=1, .ActionOnMid={MM_CMD_MID}, .ActionOnCommandCode=MM_PEEK_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* Table load from file (e.g. a neutered SpaceCop cmd-monitor table) */
+			.Command=1, .ActionOnMid={CFE_TBL_CMD_MID}, .ActionOnCommandCode=CFE_TBL_LOAD_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* Table activate (commit a loaded table) */
+			.Command=1, .ActionOnMid={CFE_TBL_CMD_MID}, .ActionOnCommandCode=CFE_TBL_ACTIVATE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* Disable ALL checksum integrity monitoring */
+			.Command=1, .ActionOnMid={CS_CMD_MID}, .ActionOnCommandCode=CS_DISABLE_ALL_CS_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		/* --- Second tier: memory read/exfil, file tampering, stored sequences --- */
+		{ /* MD set memory-dwell address (arbitrary memory read setup) */
+			.Command=1, .ActionOnMid={MD_CMD_MID}, .ActionOnCommandCode=MD_JAM_DWELL_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* MD start dwell (telemeter memory -> exfil) */
+			.Command=1, .ActionOnMid={MD_CMD_MID}, .ActionOnCommandCode=MD_START_DWELL_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* FM delete file */
+			.Command=1, .ActionOnMid={FM_CMD_MID}, .ActionOnCommandCode=FM_DELETE_FILE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* FM move file (replace a trusted file) */
+			.Command=1, .ActionOnMid={FM_CMD_MID}, .ActionOnCommandCode=FM_MOVE_FILE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* FM rename file (replace a trusted file) */
+			.Command=1, .ActionOnMid={FM_CMD_MID}, .ActionOnCommandCode=FM_RENAME_FILE_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* SC start ATS (run a stored absolute-time command sequence) */
+			.Command=1, .ActionOnMid={SC_CMD_MID}, .ActionOnCommandCode=SC_START_ATS_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
+		{ /* SC start RTS (run a stored relative-time command sequence) */
+			.Command=1, .ActionOnMid={SC_CMD_MID}, .ActionOnCommandCode=SC_START_RTS_CC,
+			.HaveDeactivate=0, .StixInfo={.Action=ALERT_IMMEDIATELY, .StixId=state_change_id}, .enableML=0
+		},
 		/*
 		 * Time-adjust command counting (GNTM-7). Core cFE - unchanged from PoC.
 		 * Each CFE_TIME_SET_TIME_CC increments adjust_time_id; the periodic rule
