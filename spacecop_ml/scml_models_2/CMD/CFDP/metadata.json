@@ -1,0 +1,40 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "SEQ_NUM"
+    ],
+    "numeric_columns": [
+      "SEQ_NUM"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {}
+  },
+  "training": {
+    "training_samples": 265,
+    "false_positive_rate": 0.011320754716981131,
+    "threshold": 0.30740913152718147,
+    "score_range": [
+      1.3331792059048378e-05,
+      0.35426371666841394
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        1,
+        2,
+        2,
+        2,
+        1
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

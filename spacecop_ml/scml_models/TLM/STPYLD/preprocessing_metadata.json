@@ -1,0 +1,42 @@
+{
+  "feature_columns": [
+    "AccelX",
+    "AccelY",
+    "AccelZ",
+    "Altitude",
+    "BMEValid",
+    "GyroX",
+    "GyroY",
+    "GyroZ",
+    "Humidity",
+    "ImuValid",
+    "PayloadValid",
+    "Pressure",
+    "Temperature"
+  ],
+  "numeric_columns": [
+    "AccelX",
+    "AccelY",
+    "AccelZ",
+    "Altitude",
+    "BMEValid",
+    "GyroX",
+    "GyroY",
+    "GyroZ",
+    "Humidity",
+    "ImuValid",
+    "PayloadValid",
+    "Pressure",
+    "Temperature"
+  ],
+  "categorical_valid_values": {},
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "GPSVal3": 0.0,
+    "GPSVal2": 0.0,
+    "GPSValid": 0.0,
+    "GPSVal1": 0.0
+  }
+}

@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
+// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
+// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+// any warranty that the software will be error free.
+//
+// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
+// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+// documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Dominc Berry (dominic.t.berry@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 //! Data Preprocessing for Machine Learning
 //!
@@ -66,6 +82,12 @@ pub struct PreprocessingMetadata {
     pub categorical_encoding: String,
     /// Feature scaling method (e.g., "min_max_scaler")
     pub scaling: String,
+    /// Numeric fields that were constant in training and therefore excluded
+    /// from the autoencoder, mapped to their single observed value. These are
+    /// candidates for deterministic exact-match / change-detection monitoring
+    /// rather than reconstruction-based anomaly detection.
+    #[serde(default)]
+    pub constant_fields: HashMap<String, f64>,
 }
 
 /// Parameters for min-max feature scaling.
@@ -101,6 +123,49 @@ pub struct Preprocessor {
 }
 
 impl Preprocessor {
+    /// Load the set of feature names to exclude from training.
+    ///
+    /// Any parameter whose name appears in the denylist file is dropped from
+    /// the feature set (both numeric and one-hot categorical). These are the
+    /// monotonic counters, timers, and zero-signal fields cataloged in
+    /// `feature_denylist.txt` that otherwise drift outside the training range
+    /// at inference and produce recurring false positives.
+    ///
+    /// File format: one feature name per line; blank lines and `#` comments are
+    /// ignored, and an inline `# ...` comment after a name is stripped. The path
+    /// defaults to `feature_denylist.txt` and can be overridden with the
+    /// `SPACECOP_FEATURE_DENYLIST` environment variable. A missing file is not
+    /// an error — it just means nothing is denied.
+    fn load_denied_features() -> HashSet<String> {
+        let path = std::env::var("SPACECOP_FEATURE_DENYLIST")
+            .unwrap_or_else(|_| "feature_denylist.txt".to_string());
+
+        let contents = match fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(_) => {
+                eprintln!(
+                    "  ⚠ Warning: feature denylist '{}' not found; no features will be excluded",
+                    path
+                );
+                return HashSet::new();
+            }
+        };
+
+        let mut denied = HashSet::new();
+        for line in contents.lines() {
+            // Strip inline comments, then trim; skip blanks and full-line comments.
+            let name = line.split('#').next().unwrap_or("").trim();
+            if name.is_empty() {
+                continue;
+            }
+            // Take only the first whitespace-delimited token (the feature name).
+            if let Some(token) = name.split_whitespace().next() {
+                denied.insert(token.to_string());
+            }
+        }
+        denied
+    }
+
     /// Create a new preprocessor by analyzing training data.
     ///
     /// This method identifies all unique parameters and their types,
@@ -134,23 +199,51 @@ impl Preprocessor {
         let mut all_param_names = HashSet::new();
         let mut numeric_params = HashSet::new();
         let mut categorical_params = HashMap::new();
+        // Track the observed [min, max] of every numeric parameter so we can
+        // detect zero-variance (constant) fields below.
+        let mut numeric_ranges: HashMap<String, (f64, f64)> = HashMap::new();
 
         for data in training_data {
             for (param_name, param_value) in &data.parameters {
                 all_param_names.insert(param_name.clone());
-                
+
                 match param_value {
                     // Numeric types: integers and floats
                     ParsedValue::UInt(_) | ParsedValue::Int(_) | ParsedValue::Float(_) => {
                         numeric_params.insert(param_name.clone());
+                        let v = match param_value {
+                            ParsedValue::UInt(v) => *v as f64,
+                            ParsedValue::Int(v) => *v as f64,
+                            ParsedValue::Float(v) => *v,
+                            _ => unreachable!(),
+                        };
+                        numeric_ranges
+                            .entry(param_name.clone())
+                            .and_modify(|(mn, mx)| {
+                                if v < *mn {
+                                    *mn = v;
+                                }
+                                if v > *mx {
+                                    *mx = v;
+                                }
+                            })
+                            .or_insert((v, v));
                     }
-                    // Categorical types: strings and states
-                    ParsedValue::String(s) | ParsedValue::State(s) => {
+                    // State enumerations (e.g. ENABLED/DISABLED) are meaningful
+                    // categorical signals -> one-hot encode them.
+                    ParsedValue::State(s) => {
                         categorical_params
                             .entry(param_name.clone())
                             .or_insert_with(HashSet::new)
                             .insert(s.clone());
                     }
+                    // Free-text strings (filenames, paths, messages, app/table
+                    // names, the synthetic _tlm_name) are high-cardinality
+                    // identifiers with no anomaly signal. One-hot encoding them
+                    // only produces an "_Other" column that fires on any value
+                    // unseen in training -> guaranteed false positives. Exclude
+                    // them from the feature set entirely.
+                    ParsedValue::String(_) => {}
                 }
             }
         }
@@ -159,19 +252,96 @@ impl Preprocessor {
         let mut feature_columns = Vec::new();
         let mut numeric_columns = Vec::new();
 
-        // Add numeric columns (sorted for consistency)
-        let mut numeric_params_vec: Vec<_> = numeric_params.iter().cloned().collect();
+        // Load the exclusion set. A parameter is excluded if it is on the
+        // denylist (monotonic counters, timers, zero-signal fields) or if it is
+        // a synthetic identifier injected by the parser (names beginning with
+        // '_', e.g. "_tlm_name" — the packet identity, which carries no anomaly
+        // signal and only ever fires its "_Other" one-hot bucket).
+        let denied = Self::load_denied_features();
+        // Strip a trailing array index (e.g. "BYTECOUNT_1" -> "BYTECOUNT") so a
+        // single denylist entry covers every element of an array-valued
+        // parameter. An exact-name entry (e.g. "BYTECOUNT_1") still matches
+        // first, so a specific element can be denied on its own if needed.
+        fn base_name(name: &str) -> &str {
+            match name.rsplit_once('_') {
+                Some((base, idx))
+                    if !idx.is_empty() && idx.bytes().all(|b| b.is_ascii_digit()) =>
+                {
+                    base
+                }
+                _ => name,
+            }
+        }
+        let is_excluded = |name: &str| {
+            name.starts_with('_') || denied.contains(name) || denied.contains(base_name(name))
+        };
+
+        // Drop zero-variance (constant) numeric fields. A feature that never
+        // changes in training carries no anomaly signal, yet with min-max
+        // scaling (data_range == 0 -> scale 1) any deviation at inference maps
+        // to a raw-magnitude reconstruction error and fires a false positive.
+        // Record each dropped field's constant value: genuine discrete-state
+        // fields (checksum-enable flags, monitor states, ...) are better served
+        // by a deterministic exact-match rule against this value than by the
+        // autoencoder. Denied params are already gone via is_excluded, so this
+        // map holds only the non-denied constants worth surfacing as rules.
+        let mut constant_fields: HashMap<String, f64> = HashMap::new();
+        let mut numeric_params_vec: Vec<_> = numeric_params
+            .iter()
+            .filter(|p| !is_excluded(p))
+            .filter(|p| match numeric_ranges.get(*p) {
+                Some(&(mn, mx)) if mn == mx => {
+                    constant_fields.insert((*p).clone(), mn);
+                    false
+                }
+                _ => true,
+            })
+            .cloned()
+            .collect();
         numeric_params_vec.sort();
+        if !constant_fields.is_empty() {
+            eprintln!(
+                "  ⊘ Dropped {} zero-variance numeric field(s) from the model (recorded as exact-match candidates)",
+                constant_fields.len()
+            );
+        }
         for param in &numeric_params_vec {
             feature_columns.push(param.clone());
             numeric_columns.push(param.clone());
         }
 
-        // Add one-hot encoded categorical columns
+        // Add one-hot encoded categorical columns, skipping excluded params.
         let mut categorical_valid_values = HashMap::new();
-        let mut categorical_params_vec: Vec<_> = categorical_params.keys().cloned().collect();
+        let mut categorical_params_vec: Vec<_> = categorical_params
+            .keys()
+            .filter(|p| !is_excluded(p))
+            .cloned()
+            .collect();
         categorical_params_vec.sort();
-        
+
+        // Drop identifier-like categoricals by cardinality. A `State` field with
+        // a large number of distinct training values is almost certainly a
+        // high-cardinality identifier (a file path, a per-actionpoint result
+        // vector, etc.) rather than a bounded state enum. One-hot encoding it
+        // produces hundreds of sparse columns plus an "_Other" bucket that fires
+        // on any value unseen in training -> guaranteed false positives and
+        // model bloat. Drop these exactly as we drop free-text strings. The cap
+        // is deliberately generous so genuine enums (ENABLED/DISABLED, small
+        // status-code sets) are never affected. Each drop is logged so the
+        // exclusion stays auditable without having to name the field explicitly.
+        const MAX_CATEGORICAL_CARDINALITY: usize = 20;
+        let (high_cardinality, categorical_params_vec): (Vec<_>, Vec<_>) = categorical_params_vec
+            .into_iter()
+            .partition(|p| categorical_params[p].len() > MAX_CATEGORICAL_CARDINALITY);
+        for param in &high_cardinality {
+            eprintln!(
+                "  ⚠ Dropping high-cardinality categorical '{}' ({} distinct values > {} cap) — treated as identifier, not a state enum",
+                param,
+                categorical_params[param].len(),
+                MAX_CATEGORICAL_CARDINALITY
+            );
+        }
+
         for param in &categorical_params_vec {
             let mut values: Vec<_> = categorical_params[param].iter().cloned().collect();
             values.sort();
@@ -198,6 +368,7 @@ impl Preprocessor {
             missing_value_strategy: "fill_with_zero".to_string(),
             categorical_encoding: "one_hot".to_string(),
             scaling: "min_max_scaler".to_string(),
+            constant_fields,
         };
 
         Ok(Preprocessor {
@@ -387,8 +558,13 @@ impl Preprocessor {
                 .zip(scaler.min_.iter())
                 .zip(scaler.scale_.iter())
                 .map(|((x, min_val), scale_val)| {
-                    // scaled = x * scale + min
-                    ((x * scale_val) + min_val) as f32
+                    // scaled = x * scale + min, clamped to [0, 1]. The model was
+                    // only ever trained on values within [0, 1]; a nominal-but-
+                    // unseen value beyond the training min/max would otherwise
+                    // scale outside that range and explode reconstruction error.
+                    // Clamping keeps such out-of-range values at the boundary so
+                    // they no longer read as anomalies on their own.
+                    (((x * scale_val) + min_val) as f32).clamp(0.0, 1.0)
                 })
                 .collect();
             Ok(scaled)

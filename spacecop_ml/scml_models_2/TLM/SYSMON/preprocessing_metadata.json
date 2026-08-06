@@ -1,0 +1,20 @@
+{
+  "feature_columns": [
+    "CPULoadPercent",
+    "CPUTempC",
+    "FreeMemoryKB"
+  ],
+  "numeric_columns": [
+    "CPULoadPercent",
+    "CPUTempC",
+    "FreeMemoryKB"
+  ],
+  "categorical_valid_values": {},
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "TotalMemoryKB": 425168.0,
+    "DiskTotalMB": 14383.0
+  }
+}

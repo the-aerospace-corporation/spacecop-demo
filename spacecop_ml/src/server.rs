@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
+// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
+// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+// any warranty that the software will be error free.
+//
+// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
+// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+// documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Dominc Berry (dominic.t.berry@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 //! Real-Time Inference Server with Multi-Layer Security Detection
 //!
@@ -710,6 +726,47 @@ impl BroadcastServer {
                                 }
                                 Err(e) => {
                                     eprintln!("  ML anomaly detection error: {}", e);
+                                }
+                            }
+
+                            // ========================================================
+                            // CHECK 4: Exact-match state rules
+                            // Deterministic checks on fields that are constant in
+                            // nominal operation (checksum-enable flags, monitor
+                            // states, ...). Runs even when a system has no ML model.
+                            // ========================================================
+                            let violations = server.anomaly_system.check_exact_match(&parsed_data);
+                            if !violations.is_empty() {
+                                for v in &violations {
+                                    println!(
+                                        "  ⚠ State deviation: {} = {} (expected {})",
+                                        v.field, v.actual, v.expected
+                                    );
+                                }
+                                // One alert per packet (dedup keyed on packet content),
+                                // listing every field that deviated.
+                                if server.anomaly_system.should_alert(&parsed_data) {
+                                    let json_data: ParsedDataJson = parsed_data.clone().into();
+                                    let deviations: Vec<_> = violations.iter().map(|v| serde_json::json!({
+                                        "field": v.field,
+                                        "expected": v.expected,
+                                        "actual": v.actual,
+                                    })).collect();
+                                    let output_json = serde_json::json!({
+                                        "alert_type": "STATE_DEVIATION",
+                                        "stix_pattern": "unauthorized-command",
+                                        "severity": "HIGH",
+                                        "data": json_data,
+                                        "state_deviations": deviations,
+                                    });
+                                    match serde_json::to_string(&output_json) {
+                                        Ok(json_str) => {
+                                            if let Err(e) = server.send_alert(&json_str) {
+                                                eprintln!("  Failed to send state-deviation alert: {}", e);
+                                            }
+                                        }
+                                        Err(e) => eprintln!("  Error serializing to JSON: {}", e),
+                                    }
                                 }
                             }
                         }

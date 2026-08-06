@@ -1,0 +1,50 @@
+{
+  "feature_columns": [
+    "BSolarPanelMa",
+    "BSolarPanelV",
+    "BatteryMa",
+    "BatteryV",
+    "FSolarPanelMa",
+    "FSolarPanelV",
+    "LSolarPanelMa",
+    "LSolarPanelV",
+    "RSolarPanelMa",
+    "RSolarPanelV",
+    "TSolarPanelMa",
+    "TSolarPanelV",
+    "USolarPanelMa",
+    "USolarPanelV"
+  ],
+  "numeric_columns": [
+    "BSolarPanelMa",
+    "BSolarPanelV",
+    "BatteryMa",
+    "BatteryV",
+    "FSolarPanelMa",
+    "FSolarPanelV",
+    "LSolarPanelMa",
+    "LSolarPanelV",
+    "RSolarPanelMa",
+    "RSolarPanelV",
+    "TSolarPanelMa",
+    "TSolarPanelV",
+    "USolarPanelMa",
+    "USolarPanelV"
+  ],
+  "categorical_valid_values": {},
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "BSolarPanelP": 1.0,
+    "BlankP": 0.0,
+    "USolarPanelP": 1.0,
+    "BlankV": -1.0,
+    "TSolarPanelP": 1.0,
+    "BatteryP": 1.0,
+    "FSolarPanelP": 1.0,
+    "RSolarPanelP": 1.0,
+    "LSolarPanelP": 1.0,
+    "BlankMa": -1.0
+  }
+}

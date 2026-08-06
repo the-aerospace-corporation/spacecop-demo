@@ -1,0 +1,51 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "UTILCPUAVG",
+      "UTILCPUPEAK"
+    ],
+    "numeric_columns": [
+      "UTILCPUAVG",
+      "UTILCPUPEAK"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "MSGACTEXEC": 0.0,
+      "MAXRESETS": 3.0,
+      "CURRENTEVENTMONSTATE": 0.0,
+      "CURRENTCPUHOGSTATE": 1.0,
+      "APPMONENABLES_1": 0.0,
+      "STATUSFLAGS": 31.0,
+      "CURRENTALIVENESSSTATE": 1.0,
+      "CURRENTAPPMONSTATE": 1.0
+    }
+  },
+  "training": {
+    "training_samples": 8381,
+    "false_positive_rate": 0.00011931750387781887,
+    "threshold": 8.626442133853607e-05,
+    "score_range": [
+      3.163561787398756e-06,
+      8.62644254446994e-05
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

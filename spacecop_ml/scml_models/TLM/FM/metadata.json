@@ -1,0 +1,44 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "CHILDPREVIOUSCC",
+      "NUMOPENFILES"
+    ],
+    "numeric_columns": [
+      "CHILDPREVIOUSCC",
+      "NUMOPENFILES"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "CHILDCURRENTCC": 0.0
+    }
+  },
+  "training": {
+    "training_samples": 6408,
+    "false_positive_rate": 0.008270911360799,
+    "threshold": 0.20267282166898726,
+    "score_range": [
+      0.08065639176786421,
+      0.3010795239490318
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

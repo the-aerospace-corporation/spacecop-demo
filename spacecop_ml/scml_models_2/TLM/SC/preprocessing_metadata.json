@@ -1,0 +1,53 @@
+{
+  "feature_columns": [
+    "NEXTRTSTIME",
+    "NUMRTSACTIVE",
+    "RTSNUMBER",
+    "ATPSTATE_IDLE",
+    "ATPSTATE_Other",
+    "ATSNUMBER_A",
+    "ATSNUMBER_Other",
+    "CONTINUEATSONFAILUREFLAG_STOP",
+    "CONTINUEATSONFAILUREFLAG_Other",
+    "RTSEXECUTINGSTATUS_1_NO",
+    "RTSEXECUTINGSTATUS_1_Other",
+    "SWITCHPENDFLAG_NO",
+    "SWITCHPENDFLAG_Other"
+  ],
+  "numeric_columns": [
+    "NEXTRTSTIME",
+    "NUMRTSACTIVE",
+    "RTSNUMBER"
+  ],
+  "categorical_valid_values": {
+    "ATSNUMBER": [
+      "A"
+    ],
+    "RTSEXECUTINGSTATUS_1": [
+      "NO"
+    ],
+    "SWITCHPENDFLAG": [
+      "NO"
+    ],
+    "ATPSTATE": [
+      "IDLE"
+    ],
+    "CONTINUEATSONFAILUREFLAG": [
+      "STOP"
+    ]
+  },
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "LASTATSERRCMD": 0.0,
+    "LASTRTSERRCMD": 0.0,
+    "NEXTATSTIME": 4294967295.0,
+    "ATPFREEBYTES_2": 16000.0,
+    "ATPCMDNUMBER": 0.0,
+    "APPENDCMDARG": 0.0,
+    "RTSDISABLEDSTATUS_1": 13.0,
+    "RTSEXECUTINGSTATUS_1": 2.0,
+    "ATPFREEBYTES_1": 16000.0
+  }
+}

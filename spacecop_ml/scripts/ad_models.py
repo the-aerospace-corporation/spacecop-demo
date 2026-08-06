@@ -223,7 +223,7 @@ class AutoencoderForAnomalyDetection:
                   shuffle=self.shuffle,
                   verbose=self.model_training_verbosity)
 
-        # Save the Keras model (disabled — the ONNX export below is used instead)
+        # Save the Keras model
         # model.save(self.model_path)
         # self.debug(f"Saved model to {self.model_path}")
         

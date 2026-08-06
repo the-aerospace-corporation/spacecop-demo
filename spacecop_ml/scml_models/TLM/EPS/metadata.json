@@ -1,0 +1,79 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "BSolarPanelMa",
+      "BSolarPanelV",
+      "BatteryMa",
+      "BatteryV",
+      "FSolarPanelMa",
+      "FSolarPanelV",
+      "LSolarPanelMa",
+      "LSolarPanelV",
+      "RSolarPanelMa",
+      "RSolarPanelV",
+      "TSolarPanelMa",
+      "TSolarPanelV",
+      "USolarPanelMa",
+      "USolarPanelV"
+    ],
+    "numeric_columns": [
+      "BSolarPanelMa",
+      "BSolarPanelV",
+      "BatteryMa",
+      "BatteryV",
+      "FSolarPanelMa",
+      "FSolarPanelV",
+      "LSolarPanelMa",
+      "LSolarPanelV",
+      "RSolarPanelMa",
+      "RSolarPanelV",
+      "TSolarPanelMa",
+      "TSolarPanelV",
+      "USolarPanelMa",
+      "USolarPanelV"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "LSolarPanelP": 1.0,
+      "USolarPanelP": 1.0,
+      "FSolarPanelP": 1.0,
+      "BlankMa": -1.0,
+      "BSolarPanelP": 1.0,
+      "BlankV": -1.0,
+      "TSolarPanelP": 1.0,
+      "BatteryP": 1.0,
+      "BlankP": 0.0,
+      "RSolarPanelP": 1.0
+    }
+  },
+  "training": {
+    "training_samples": 5952,
+    "false_positive_rate": 0.010080645161290322,
+    "threshold": 0.029150309148833,
+    "score_range": [
+      0.000364534417821971,
+      0.05414878832879811
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 3,
+      "architecture": [
+        14,
+        9,
+        7,
+        3,
+        7,
+        9,
+        14
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

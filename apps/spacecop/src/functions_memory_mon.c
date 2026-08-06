@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop - CE
+// All rights reserved.
+//
+//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
+//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
+//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+//any warranty that the software will be error free.
+//
+//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
+//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+//documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Charles Tucker (charles.tucker@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 /**
  * @file functions_memory_mon.c
@@ -959,8 +975,7 @@ void CFS_GetRegionStats(int region_id, uint64_t *checks, uint64_t *violations)
 /**
  * @brief Get memory usage of a process from /proc/[pid]/statm
  *
- * Reads the first statm field (total program size, i.e. VmSize) and converts
- * it to kilobytes.
+ * Reads the statm file to get resident set size and converts to kilobytes.
  *
  * @param[in] pid Process ID to query
  *

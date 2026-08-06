@@ -1,0 +1,47 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "CPULoadPercent",
+      "CPUTempC",
+      "FreeMemoryKB"
+    ],
+    "numeric_columns": [
+      "CPULoadPercent",
+      "CPUTempC",
+      "FreeMemoryKB"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "DiskTotalMB": 14383.0,
+      "TotalMemoryKB": 425168.0
+    }
+  },
+  "training": {
+    "training_samples": 5946,
+    "false_positive_rate": 0.010090817356205853,
+    "threshold": 0.09635043358133337,
+    "score_range": [
+      3.463054221149354e-05,
+      0.3122665713516304
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        3,
+        2,
+        2,
+        2,
+        3
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

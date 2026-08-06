@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop - CE
+// All rights reserved.
+//
+//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
+//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
+//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+//any warranty that the software will be error free.
+//
+//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
+//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+//documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Charles Tucker (charles.tucker@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 /**
  * @file functions_file_integrity_linux.c
@@ -25,6 +41,30 @@
 
 #include "functions_file_integrity_linux.h"
 #include "spacecop_platform_cfg.h"  /* SPACECOP_CF_DIR / SPACECOP_DATA_DIR */
+#include <fnmatch.h>                /* glob matching for the add allowlist    */
+
+/*=======================================================================================
+** Add-allowlist configuration
+**
+** The data dir (/var/pisat/data) legitimately receives new files at runtime -
+** notably camera captures ("capture_<N>.jpg"). Treating every one as a "File
+** Added" IOB drowns the operator in benign alerts. The allowlist below names
+** the glob patterns for EXPECTED new files: additions that match are not
+** alerted. Modifications and deletions are ALWAYS alerted (a write-once picture
+** being altered or wiped is still suspicious), and the cf dir is never
+** allowlisted, so config/binary integrity stays strict.
+**
+** Patterns are loaded from SPACECOP_FIM_ALLOWLIST_FILE (in the integrity-
+** protected /cf dir) if present, one glob per line ('#' comments allowed). If
+** that file is missing or empty we fall back to the built-in default so the
+** suppression works out of the box.
+**=======================================================================================*/
+
+/** @brief Optional operator-tunable allowlist file (data-dir-relative globs) */
+#define SPACECOP_FIM_ALLOWLIST_FILE   SPACECOP_CF_DIR "/fim_allowlist.txt"
+
+/** @brief Built-in default used when the allowlist file is absent/empty */
+#define SPACECOP_FIM_DEFAULT_ADD_GLOB "capture_*.jpg"
 
 /*=======================================================================================
 ** Static Global Variables
@@ -42,15 +82,21 @@ static FileList cf_old = {NULL, 0, 0};
 /** @brief Baseline file list for data directory */
 static FileList data_old = {NULL, 0, 0};
 
-/** 
+/**
  * @brief Initialization state tracker
- * 
+ *
  * Values:
  * - 0: Not initialized
  * - 1: Initialization in progress
  * - 2: Fully initialized and ready
  */
 static int initialized = 0;
+
+/** @brief Glob patterns for expected new files in the data dir (adds only) */
+static char  **add_allow = NULL;
+
+/** @brief Number of patterns in @ref add_allow */
+static size_t  add_allow_len = 0;
 
 /*=======================================================================================
 ** Memory Management Helper Functions
@@ -496,6 +542,124 @@ static void sort_filelist(FileList *l)
 }
 
 /*=======================================================================================
+** Add-Allowlist Functions
+**=======================================================================================*/
+
+/**
+ * @brief Free the loaded add-allowlist and reset it to empty
+ *
+ * @return void
+ */
+static void add_allow_free(void)
+{
+    for (size_t i = 0; i < add_allow_len; i++)
+    {
+        free(add_allow[i]);
+    }
+    free(add_allow);
+    add_allow = NULL;
+    add_allow_len = 0;
+}
+
+/**
+ * @brief Append a glob pattern to the add-allowlist
+ *
+ * @param[in] pat Glob pattern string (will be duplicated)
+ *
+ * @return void
+ */
+static void add_allow_push(const char *pat)
+{
+    char **n = realloc(add_allow, (add_allow_len + 1) * sizeof(char *));
+    if (!n)
+    {
+        printf("Out of memory\n");
+        return;
+    }
+    add_allow = n;
+    add_allow[add_allow_len] = xstrdup(pat);
+    if (add_allow[add_allow_len])
+    {
+        add_allow_len++;
+    }
+}
+
+/**
+ * @brief Load the data-dir add-allowlist
+ *
+ * Reads glob patterns from SPACECOP_FIM_ALLOWLIST_FILE (one per line, blank
+ * lines and '#' comments ignored). If the file is absent or yields no
+ * patterns, falls back to the built-in default so benign camera captures are
+ * suppressed out of the box.
+ *
+ * @return void
+ *
+ * @note Replaces any previously loaded allowlist
+ */
+static void load_add_allowlist(void)
+{
+    add_allow_free();
+
+    FILE *f = fopen(SPACECOP_FIM_ALLOWLIST_FILE, "r");
+    if (f)
+    {
+        char line[256];
+        while (fgets(line, sizeof(line), f))
+        {
+            /* Trim leading whitespace */
+            char *s = line;
+            while (*s == ' ' || *s == '\t') s++;
+
+            /* Trim trailing whitespace / newline */
+            size_t n = strlen(s);
+            while (n > 0 && (s[n-1] == '\n' || s[n-1] == '\r' ||
+                             s[n-1] == ' '  || s[n-1] == '\t'))
+            {
+                s[--n] = '\0';
+            }
+
+            /* Skip blanks and comments */
+            if (n == 0 || s[0] == '#') continue;
+
+            add_allow_push(s);
+        }
+        fclose(f);
+    }
+
+    /* Built-in default if the file was missing or empty */
+    if (add_allow_len == 0)
+    {
+        add_allow_push(SPACECOP_FIM_DEFAULT_ADD_GLOB);
+    }
+}
+
+/**
+ * @brief Test whether a newly-added file is an expected (allowlisted) one
+ *
+ * Matches each allowlist glob against both the data-dir-relative path and the
+ * bare basename, so a pattern like "capture_*.jpg" suppresses the file whether
+ * it lands at the root of the data dir or in a subdirectory.
+ *
+ * @param[in] rel_path Data-dir-relative path of the added file
+ *
+ * @return int 1 if allowlisted (suppress the add alert), 0 otherwise
+ */
+static int add_is_allowlisted(const char *rel_path)
+{
+    if (!rel_path) return 0;
+
+    const char *base = strrchr(rel_path, '/');
+    base = base ? base + 1 : rel_path;
+
+    for (size_t i = 0; i < add_allow_len; i++)
+    {
+        if (fnmatch(add_allow[i], rel_path, 0) == 0) return 1;
+        if (fnmatch(add_allow[i], base, 0) == 0) return 1;
+    }
+    return 0;
+}
+
+/*=======================================================================================
 ** Difference Detection and Reporting Functions
 **=======================================================================================*/
 
@@ -515,13 +679,18 @@ static void sort_filelist(FileList *l)
  * @param[in] oldL Pointer to baseline FileList (sorted)
  * @param[in] newL Pointer to current FileList (sorted)
  * @param[in] iob_id SPARTA/STIX identifier for alert correlation
+ * @param[in] apply_add_allowlist If nonzero, suppress "File Added" alerts for
+ *            files matching the add-allowlist (used for the data dir; pass 0
+ *            for the cf dir so config/binary additions always alert)
  *
  * @return void
  *
  * @note Both lists must be sorted by relative path
  * @note Algorithm complexity is O(n + m) where n, m are list lengths
+ * @note Only additions are allowlisted; modifications and deletions always alert
  */
-static void diff_and_report(const FileList *oldL, const FileList *newL, const char* iob_id)
+static void diff_and_report(const FileList *oldL, const FileList *newL, const char* iob_id,
+                            int apply_add_allowlist)
 {
     size_t i = 0, j = 0;
     char message[IDS_REPORT_MESSAGE_LEN];
@@ -573,11 +742,20 @@ static void diff_and_report(const FileList *oldL, const FileList *newL, const ch
             else
             {
                 /* File in new but not in old - added */
+
+                /* Suppress expected new files (e.g. camera captures) in the
+                 * data dir; still alert on anything not on the allowlist. */
+                if (apply_add_allowlist && add_is_allowlisted(newL->items[j].rel_path))
+                {
+                    j++;
+                    continue;
+                }
+
                 memset(message, 0, sizeof(char) * IDS_REPORT_MESSAGE_LEN);
-                snprintf(message, IDS_REPORT_MESSAGE_LEN, 
-                         "[SPACECOP] IOB Detected: SPARTA ID=%s (File Added %s)", 
+                snprintf(message, IDS_REPORT_MESSAGE_LEN,
+                         "[SPACECOP] IOB Detected: SPARTA ID=%s (File Added %s)",
                          iob_id, newL->items[j].rel_path);
-                
+
                 SPACECOP_ReportIDSMsg(message);
                 CFE_EVS_SendEvent(2001, CFE_EVS_EventType_ERROR, 
                                   "[SPACECOP] IOB Detected: SPARTA ID=%s (File Added %s)", 
@@ -606,11 +784,20 @@ static void diff_and_report(const FileList *oldL, const FileList *newL, const ch
         else
         {
             /* Remaining new files - added */
+
+            /* Suppress expected new files (e.g. camera captures) in the data
+             * dir; still alert on anything not on the allowlist. */
+            if (apply_add_allowlist && add_is_allowlisted(newL->items[j].rel_path))
+            {
+                j++;
+                continue;
+            }
+
             memset(message, 0, sizeof(char) * IDS_REPORT_MESSAGE_LEN);
-            snprintf(message, IDS_REPORT_MESSAGE_LEN, 
-                     "[SPACECOP] IOB Detected: SPARTA ID=%s (File Added %s)", 
+            snprintf(message, IDS_REPORT_MESSAGE_LEN,
+                     "[SPACECOP] IOB Detected: SPARTA ID=%s (File Added %s)",
                      iob_id, newL->items[j].rel_path);
-            
+
             SPACECOP_ReportIDSMsg(message);
             CFE_EVS_SendEvent(2001, CFE_EVS_EventType_ERROR, 
                               "[SPACECOP] IOB Detected: SPARTA ID=%s (File Added %s)", 
@@ -718,7 +905,10 @@ void Init_FileIntegrity(void)
     }
     
     initialized = 1;  /* Mark as initializing */
-    
+
+    /* Load the data-dir add-allowlist (falls back to the built-in default) */
+    load_add_allowlist();
+
     /* Initialize the lists */
     filelist_reset(&cf_old);
     filelist_reset(&data_old);
@@ -764,9 +954,11 @@ void RunFileIntegrity(const char* iob_id)
     scan_root(cf_dir, &cf_new);
     scan_root(data_dir, &data_new);
 
-    /* Compare and report differences */
-    diff_and_report(&cf_old, &cf_new, iob_id);
-    diff_and_report(&data_old, &data_new, iob_id);
+    /* Compare and report differences. The cf dir is strict (0): every add is
+     * alerted. The data dir (1) suppresses allowlisted additions (e.g. camera
+     * captures) but still alerts on unexpected adds and on any modify/delete. */
+    diff_and_report(&cf_old, &cf_new, iob_id, 0);
+    diff_and_report(&data_old, &data_new, iob_id, 1);
 
     /* Update baselines */
     filelist_move(&cf_old, &cf_new);

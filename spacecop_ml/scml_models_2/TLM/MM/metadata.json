@@ -1,0 +1,46 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "MEMTYPE_NOMEMTYPE",
+      "MEMTYPE_Other"
+    ],
+    "numeric_columns": [],
+    "categorical_valid_values": {
+      "MEMTYPE": [
+        "NOMEMTYPE"
+      ]
+    },
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "LASTACTION": 0.0,
+      "DATAVALUE": 0.0
+    }
+  },
+  "training": {
+    "training_samples": 8374,
+    "false_positive_rate": 0.0,
+    "threshold": 8.410653604999044e-05,
+    "score_range": [
+      8.410651896774424e-05,
+      8.410653604999044e-05
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "feature_columns": [
+    "LastCaptureStatus",
+    "LastImageSizeBytes"
+  ],
+  "numeric_columns": [
+    "LastCaptureStatus",
+    "LastImageSizeBytes"
+  ],
+  "categorical_valid_values": {},
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "CameraAvailable": 1.0,
+    "LastDeleteStatus": 0.0,
+    "CaptureInProgress": 0.0
+  }
+}

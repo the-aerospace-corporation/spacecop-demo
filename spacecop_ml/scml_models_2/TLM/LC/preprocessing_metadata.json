@@ -1,0 +1,19 @@
+{
+  "feature_columns": [
+    "CURRENTLCSTATE_DISABLED",
+    "CURRENTLCSTATE_Other"
+  ],
+  "numeric_columns": [],
+  "categorical_valid_values": {
+    "CURRENTLCSTATE": [
+      "DISABLED"
+    ]
+  },
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "WPSINUSE": 0.0,
+    "ACTIVEAPS": 0.0
+  }
+}

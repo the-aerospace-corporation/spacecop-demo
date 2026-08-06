@@ -1,0 +1,24 @@
+{
+  "feature_columns": [
+    "UTILCPUAVG",
+    "UTILCPUPEAK"
+  ],
+  "numeric_columns": [
+    "UTILCPUAVG",
+    "UTILCPUPEAK"
+  ],
+  "categorical_valid_values": {},
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "MSGACTEXEC": 0.0,
+    "MAXRESETS": 3.0,
+    "STATUSFLAGS": 31.0,
+    "CURRENTALIVENESSSTATE": 1.0,
+    "CURRENTCPUHOGSTATE": 1.0,
+    "CURRENTAPPMONSTATE": 1.0,
+    "APPMONENABLES_1": 0.0,
+    "CURRENTEVENTMONSTATE": 0.0
+  }
+}

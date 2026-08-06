@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
+// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
+// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+// any warranty that the software will be error free.
+//
+// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
+// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+// documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Dominc Berry (dominic.t.berry@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 //! Command and Telemetry Parser
 //!
@@ -18,7 +34,7 @@
 //! # Packet Structure
 //!
 //! ## Command Packets (APP ID starts with '1')
-//! - CCSDS Header (64 bits): APP ID, sequence, length, function code, checksum
+//! - CCSDS Header (64 bits): APP ID, sequence, length, function code
 //! - Payload: Command-specific parameters
 //!
 //! ## Telemetry Packets (APP ID starts with '0')
@@ -198,7 +214,7 @@ impl CmdTlmParser {
         let parameters = self.get_command_parameters(&conn, command.id)?;
 
         // Parse payload parameters (skip CCSDS header - first 5 params)
-        // CCSDS header: APP_ID, SEQUENCE, LENGTH, FUNCTION_CODE, CHECKSUM
+        // CCSDS header: APP_ID, SEQUENCE, LENGTH, CHECKSUM, FUNCTION_CODE
         let bit_offset = 64; // Start after 64-bit header
         let params_to_parse = if parameters.len() > 5 {
             &parameters[5..]
@@ -266,10 +282,18 @@ impl CmdTlmParser {
             let char_shift = 2 + bit_lengths.iter().sum::<i32>() / 4;
             let length = bit_length / 4;
 
-            // Compare expected function code with actual value in hex string
+            // Compare expected function code with actual value in hex string.
+            // The stored default value comes from the COSMOS cmd.txt init value,
+            // which is written in DECIMAL (e.g. "29"). An explicit "0x" prefix is
+            // still honored as hex. The wire value is always hex.
             if let Some(dv_str) = default_value {
+                let dv_str = dv_str.trim();
+                let stored_fc = match dv_str.strip_prefix("0x").or_else(|| dv_str.strip_prefix("0X")) {
+                    Some(hex) => u64::from_str_radix(hex, 16),
+                    None => dv_str.parse::<u64>(),
+                };
                 match (
-                    u64::from_str_radix(dv_str.trim_start_matches("0x"), 16),
+                    stored_fc,
                     u64::from_str_radix(&hex_str[char_shift as usize..(char_shift + length) as usize], 16)
                 ) {
                     (Ok(dv), Ok(hv)) => return Ok(dv == hv),

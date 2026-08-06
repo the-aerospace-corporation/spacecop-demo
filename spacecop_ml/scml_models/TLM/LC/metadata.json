@@ -1,0 +1,46 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "CURRENTLCSTATE_DISABLED",
+      "CURRENTLCSTATE_Other"
+    ],
+    "numeric_columns": [],
+    "categorical_valid_values": {
+      "CURRENTLCSTATE": [
+        "DISABLED"
+      ]
+    },
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "ACTIVEAPS": 0.0,
+      "WPSINUSE": 0.0
+    }
+  },
+  "training": {
+    "training_samples": 6408,
+    "false_positive_rate": 0.0,
+    "threshold": 0.00036751051134932544,
+    "score_range": [
+      0.00036751051134932544,
+      0.00036751051134932544
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

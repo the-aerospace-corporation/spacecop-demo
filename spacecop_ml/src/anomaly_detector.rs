@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
+// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
+// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+// any warranty that the software will be error free.
+//
+// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
+// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+// documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Dominc Berry (dominic.t.berry@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 //! Anomaly Detection Module
 //!
@@ -28,7 +44,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use tract_onnx::prelude::*;
 use crate::preprocessing::{Preprocessor, PreprocessingMetadata};
-use crate::models::ParsedData;
+use crate::models::{ParsedData, ParsedValue};
 
 /// Metadata describing a trained anomaly detection model.
 ///
@@ -105,7 +121,7 @@ impl AnomalyDetector {
     ///
     /// ```no_run
     /// use std::path::Path;
-    /// # use spacecop_ml::anomaly_detector::AnomalyDetector;
+    /// # use spacecop_ml::anomaly::AnomalyDetector;
     /// let detector = AnomalyDetector::load(Path::new("scml_models/CMD/SYSTEM1"))?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -419,6 +435,20 @@ pub struct AnomalyDetectionSystem {
     alert_tracker: std::sync::Mutex<AlertTracker>,
     /// Monitors command rates for flooding attacks
     rate_monitor: std::sync::Mutex<RateMonitor>,
+    /// Active exact-match rules: "TYPE_SYSTEM" -> (field -> expected value).
+    /// Enforced for every system regardless of whether it has an autoencoder.
+    exact_rules: HashMap<String, HashMap<String, f64>>,
+}
+
+/// A violated exact-match rule: a constant-in-training field that deviated.
+#[derive(Debug, Clone)]
+pub struct ExactMatchViolation {
+    /// Field whose value departed from its nominal constant.
+    pub field: String,
+    /// The nominal value the field held throughout training.
+    pub expected: f64,
+    /// The value observed at inference.
+    pub actual: f64,
 }
 
 impl AnomalyDetectionSystem {
@@ -453,10 +483,84 @@ impl AnomalyDetectionSystem {
             //   - Balanced:     RateMonitor::new(60, 50)
             //   - Aggressive:   RateMonitor::new(60, 20)
             rate_monitor: std::sync::Mutex::new(RateMonitor::new(60, 50)),
+            exact_rules: Self::load_exact_rules(models_dir),
         };
 
         system.load_all_models()?;
         Ok(system)
+    }
+
+    /// Load the active exact-match rules from `<models_dir>/exact_match_rules.json`.
+    ///
+    /// Only rules marked `active` are kept. A missing or unparseable file yields
+    /// an empty set (exact-match checking is simply disabled), so the server
+    /// still runs on model sets produced before this feature existed.
+    fn load_exact_rules(models_dir: &Path) -> HashMap<String, HashMap<String, f64>> {
+        use crate::models::{ExactMatchRule, EXACT_MATCH_RULES_FILE};
+        let path = models_dir.join(EXACT_MATCH_RULES_FILE);
+        let parsed: HashMap<String, HashMap<String, ExactMatchRule>> = match fs::read_to_string(&path)
+        {
+            Ok(s) => match serde_json::from_str(&s) {
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("Failed to parse {}: {} — exact-match checks disabled", path.display(), e);
+                    return HashMap::new();
+                }
+            },
+            Err(_) => return HashMap::new(),
+        };
+
+        let mut out: HashMap<String, HashMap<String, f64>> = HashMap::new();
+        let mut count = 0;
+        for (system, fields) in parsed {
+            let active: HashMap<String, f64> = fields
+                .into_iter()
+                .filter(|(_, r)| r.active)
+                .map(|(f, r)| (f, r.expected))
+                .collect();
+            if !active.is_empty() {
+                count += active.len();
+                out.insert(system, active);
+            }
+        }
+        println!("Loaded {} active exact-match rule(s) across {} system(s)", count, out.len());
+        out
+    }
+
+    /// Evaluate exact-match rules for a packet's system.
+    ///
+    /// Returns one violation per active rule whose field is present and differs
+    /// from its nominal value. Systems without rules (or fields absent from the
+    /// packet) yield nothing. Runs independently of the autoencoder, so systems
+    /// with no ML model are still covered.
+    pub fn check_exact_match(&self, data: &ParsedData) -> Vec<ExactMatchViolation> {
+        let key = format!("{}_{}", data.data_type, data.system);
+        let rules = match self.exact_rules.get(&key) {
+            Some(r) => r,
+            None => return Vec::new(),
+        };
+
+        let mut violations = Vec::new();
+        for (field, &expected) in rules {
+            // parameters is a small Vec of (name, value); linear search is fine.
+            if let Some((_, value)) = data.parameters.iter().find(|(n, _)| n == field) {
+                let actual = match value {
+                    ParsedValue::UInt(v) => *v as f64,
+                    ParsedValue::Int(v) => *v as f64,
+                    ParsedValue::Float(v) => *v,
+                    // Non-numeric values can't match a numeric rule; skip.
+                    _ => continue,
+                };
+                if actual != expected {
+                    violations.push(ExactMatchViolation {
+                        field: field.clone(),
+                        expected,
+                        actual,
+                    });
+                }
+            }
+        }
+        violations
     }
 
     /// Load all available models from the models directory.

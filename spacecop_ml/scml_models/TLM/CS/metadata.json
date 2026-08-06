@@ -1,0 +1,57 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "CFECOREBASELINE",
+      "CURRENTCSTABLE"
+    ],
+    "numeric_columns": [
+      "CFECOREBASELINE",
+      "CURRENTCSTABLE"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "OSBASELINE": 0.0,
+      "ONESHOTTASKINUSE": 0.0,
+      "EEPROMCSSTATE": 1.0,
+      "MEMORYCSSTATE": 1.0,
+      "LASTONESHOTSIZE": 0.0,
+      "CURRENTENTRYINTABLE": 0.0,
+      "CFECORECSSTATE": 1.0,
+      "APPCSSTATE": 1.0,
+      "TABLESCSSTATE": 1.0,
+      "OSCSSTATE": 1.0,
+      "FILLER8": 0.0,
+      "CHILDTASKINUSE": 0.0,
+      "EEPROMBASELINE": 0.0,
+      "LASTONESHOTMAXBYTESPERCYCLE": 0.0
+    }
+  },
+  "training": {
+    "training_samples": 6408,
+    "false_positive_rate": 0.0024968789013732834,
+    "threshold": 0.00022851069662976897,
+    "score_range": [
+      2.0697201992803907e-10,
+      0.5008451760326982
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 2,
+      "architecture": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

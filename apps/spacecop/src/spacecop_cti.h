@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+//This software is provided "as is" without any warranty of any, kind either express, implied, or statutory, including, but not
+//limited to, any warranty that the software will conform to, specifications any implied warranties of merchantability, fitness
+//for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+//any warranty that the software will be error free.
+//
+//In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+//arising out of, resulting from, or in any way connected with the software or its documentation.  Whether or not based upon warranty,
+//contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+//documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Charles Tucker (charles.tucker@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 /**
  * @file spacecop_cti.h
@@ -118,14 +134,14 @@ typedef enum {
  * **Field Usage by Object Kind:**
  * - OBJ_INDICATOR: id field contains IOB identifier
  * - OBJ_FILE: id (inherited from indicator), name, sha256 fields populated
- * - OBJ_PROGRAM: only the kind is recorded; no id/name/sha256 populated
+ * - OBJ_PROGRAM: id (inherited from indicator), name fields populated
  *
  * **IOB Association:**
- * When parsing a STIX bundle, file objects inherit the IOB identifier from
- * the most recently encountered indicator object.
+ * When parsing a STIX bundle, file and program objects inherit the IOB
+ * identifier from the most recently encountered indicator object.
  *
  * @note sha256 field is only valid for OBJ_FILE objects
- * @note name field is only populated for OBJ_FILE objects
+ * @note name field is used for both files and programs
  */
 typedef struct 
 {

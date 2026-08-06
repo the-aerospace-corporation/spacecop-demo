@@ -1,0 +1,82 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "NEXTRTSTIME",
+      "NUMRTSACTIVE",
+      "RTSNUMBER",
+      "ATPSTATE_IDLE",
+      "ATPSTATE_Other",
+      "ATSNUMBER_A",
+      "ATSNUMBER_Other",
+      "CONTINUEATSONFAILUREFLAG_STOP",
+      "CONTINUEATSONFAILUREFLAG_Other",
+      "RTSEXECUTINGSTATUS_1_NO",
+      "RTSEXECUTINGSTATUS_1_Other",
+      "SWITCHPENDFLAG_NO",
+      "SWITCHPENDFLAG_Other"
+    ],
+    "numeric_columns": [
+      "NEXTRTSTIME",
+      "NUMRTSACTIVE",
+      "RTSNUMBER"
+    ],
+    "categorical_valid_values": {
+      "ATPSTATE": [
+        "IDLE"
+      ],
+      "ATSNUMBER": [
+        "A"
+      ],
+      "RTSEXECUTINGSTATUS_1": [
+        "NO"
+      ],
+      "SWITCHPENDFLAG": [
+        "NO"
+      ],
+      "CONTINUEATSONFAILUREFLAG": [
+        "STOP"
+      ]
+    },
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "ATPFREEBYTES_1": 16000.0,
+      "LASTATSERRCMD": 0.0,
+      "LASTRTSERRCMD": 0.0,
+      "ATPFREEBYTES_2": 16000.0,
+      "RTSEXECUTINGSTATUS_1": 2.0,
+      "APPENDCMDARG": 0.0,
+      "NEXTATSTIME": 4294967295.0,
+      "ATPCMDNUMBER": 0.0,
+      "RTSDISABLEDSTATUS_1": 13.0
+    }
+  },
+  "training": {
+    "training_samples": 6408,
+    "false_positive_rate": 0.0012484394506866417,
+    "threshold": 2.7124742222162975e-08,
+    "score_range": [
+      2.712473866157757e-08,
+      6.359633621304633e-05
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 3,
+      "architecture": [
+        13,
+        9,
+        6,
+        3,
+        6,
+        9,
+        13
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}

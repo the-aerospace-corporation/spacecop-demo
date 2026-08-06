@@ -1,0 +1,358 @@
+{
+  "CMD_CFS": {
+    "RTSID": {
+      "expected": 512.0,
+      "active": true
+    }
+  },
+  "TLM_CAMERA": {
+    "CameraAvailable": {
+      "expected": 1.0,
+      "active": true
+    },
+    "CaptureInProgress": {
+      "expected": 0.0,
+      "active": true
+    },
+    "LastDeleteStatus": {
+      "expected": 0.0,
+      "active": true
+    }
+  },
+  "TLM_CS": {
+    "APPCSSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "CFECORECSSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "CHILDTASKINUSE": {
+      "expected": 0.0,
+      "active": true
+    },
+    "CURRENTENTRYINTABLE": {
+      "expected": 0.0,
+      "active": false
+    },
+    "EEPROMBASELINE": {
+      "expected": 0.0,
+      "active": true
+    },
+    "EEPROMCSSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "FILLER8": {
+      "expected": 0.0,
+      "active": false
+    },
+    "LASTONESHOTMAXBYTESPERCYCLE": {
+      "expected": 0.0,
+      "active": false
+    },
+    "LASTONESHOTSIZE": {
+      "expected": 0.0,
+      "active": false
+    },
+    "MEMORYCSSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "ONESHOTTASKINUSE": {
+      "expected": 0.0,
+      "active": true
+    },
+    "OSBASELINE": {
+      "expected": 0.0,
+      "active": true
+    },
+    "OSCSSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "TABLESCSSTATE": {
+      "expected": 1.0,
+      "active": true
+    }
+  },
+  "TLM_DS": {
+    "APPENABLESTATE": {
+      "expected": 1.0,
+      "active": true
+    }
+  },
+  "TLM_EPS": {
+    "BSolarPanelP": {
+      "expected": 1.0,
+      "active": false
+    },
+    "BatteryP": {
+      "expected": 1.0,
+      "active": false
+    },
+    "BlankMa": {
+      "expected": -1.0,
+      "active": true
+    },
+    "BlankP": {
+      "expected": 0.0,
+      "active": false
+    },
+    "BlankV": {
+      "expected": -1.0,
+      "active": true
+    },
+    "FSolarPanelP": {
+      "expected": 1.0,
+      "active": false
+    },
+    "LSolarPanelP": {
+      "expected": 1.0,
+      "active": false
+    },
+    "RSolarPanelP": {
+      "expected": 1.0,
+      "active": false
+    },
+    "TSolarPanelP": {
+      "expected": 1.0,
+      "active": false
+    },
+    "USolarPanelP": {
+      "expected": 1.0,
+      "active": false
+    }
+  },
+  "TLM_FM": {
+    "CHILDCURRENTCC": {
+      "expected": 0.0,
+      "active": false
+    }
+  },
+  "TLM_HS": {
+    "APPMONENABLES_1": {
+      "expected": 0.0,
+      "active": true
+    },
+    "CURRENTALIVENESSSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "CURRENTAPPMONSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "CURRENTCPUHOGSTATE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "CURRENTEVENTMONSTATE": {
+      "expected": 0.0,
+      "active": true
+    },
+    "MAXRESETS": {
+      "expected": 3.0,
+      "active": false
+    },
+    "MSGACTEXEC": {
+      "expected": 0.0,
+      "active": false
+    },
+    "STATUSFLAGS": {
+      "expected": 31.0,
+      "active": true
+    }
+  },
+  "TLM_LC": {
+    "ACTIVEAPS": {
+      "expected": 0.0,
+      "active": false
+    },
+    "WPSINUSE": {
+      "expected": 0.0,
+      "active": true
+    }
+  },
+  "TLM_MD": {
+    "COUNTDOWN_1": {
+      "expected": 1.0,
+      "active": false
+    },
+    "COUNTDOWN_2": {
+      "expected": 1.0,
+      "active": false
+    },
+    "COUNTDOWN_3": {
+      "expected": 1.0,
+      "active": false
+    },
+    "COUNTDOWN_4": {
+      "expected": 1.0,
+      "active": false
+    },
+    "DWELLENABLEDMASK": {
+      "expected": 0.0,
+      "active": true
+    },
+    "DWELLPKTOFFSET_1": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLPKTOFFSET_2": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLPKTOFFSET_3": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLPKTOFFSET_4": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_1": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_2": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_3": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_4": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_5": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_6": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_7": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLADDRCOUNT_8": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLENTRY_1": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLENTRY_2": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLENTRY_3": {
+      "expected": 0.0,
+      "active": false
+    },
+    "DWELLTBLENTRY_4": {
+      "expected": 0.0,
+      "active": false
+    }
+  },
+  "TLM_MM": {
+    "DATAVALUE": {
+      "expected": 0.0,
+      "active": false
+    },
+    "LASTACTION": {
+      "expected": 0.0,
+      "active": false
+    }
+  },
+  "TLM_SC": {
+    "APPENDCMDARG": {
+      "expected": 0.0,
+      "active": false
+    },
+    "ATPCMDNUMBER": {
+      "expected": 0.0,
+      "active": false
+    },
+    "ATPFREEBYTES_1": {
+      "expected": 16000.0,
+      "active": false
+    },
+    "ATPFREEBYTES_2": {
+      "expected": 16000.0,
+      "active": false
+    },
+    "LASTATSERRCMD": {
+      "expected": 0.0,
+      "active": false
+    },
+    "LASTRTSERRCMD": {
+      "expected": 0.0,
+      "active": false
+    },
+    "NEXTATSTIME": {
+      "expected": 4294967295.0,
+      "active": false
+    },
+    "RTSDISABLEDSTATUS_1": {
+      "expected": 13.0,
+      "active": true
+    },
+    "RTSEXECUTINGSTATUS_1": {
+      "expected": 2.0,
+      "active": true
+    }
+  },
+  "TLM_SCH": {
+    "IGNOREMAJORFRAME": {
+      "expected": 0.0,
+      "active": true
+    },
+    "MAJORFRAMESOURCE": {
+      "expected": 1.0,
+      "active": true
+    },
+    "NEXTSLOTNUMBER": {
+      "expected": 99.0,
+      "active": false
+    },
+    "SYNCTOMET": {
+      "expected": 1.0,
+      "active": true
+    }
+  },
+  "TLM_STPYLD": {
+    "GPSVal1": {
+      "expected": 0.0,
+      "active": false
+    },
+    "GPSVal2": {
+      "expected": 0.0,
+      "active": false
+    },
+    "GPSVal3": {
+      "expected": 0.0,
+      "active": false
+    },
+    "GPSValid": {
+      "expected": 0.0,
+      "active": true
+    }
+  },
+  "TLM_SYSMON": {
+    "DiskTotalMB": {
+      "expected": 14383.0,
+      "active": false
+    },
+    "TotalMemoryKB": {
+      "expected": 425168.0,
+      "active": false
+    }
+  }
+}

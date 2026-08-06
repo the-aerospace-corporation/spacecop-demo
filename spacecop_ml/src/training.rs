@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
+// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
+// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+// any warranty that the software will be error free.
+//
+// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
+// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+// documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Dominc Berry (dominic.t.berry@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 //! Model Training Pipeline
 //!
@@ -313,6 +329,12 @@ impl TrainingPipeline {
                 .progress_chars("█▓▒░ ")
         );
 
+        // Accumulates every system's constant fields (keyed "TYPE_SYSTEM") so we
+        // can emit the exact-match rule set after the loop, including for systems
+        // whose autoencoder is skipped.
+        let mut aggregated_constants: std::collections::BTreeMap<String, std::collections::BTreeMap<String, f64>> =
+            std::collections::BTreeMap::new();
+
         for ((data_type, system), data) in grouped_data {
             let model_name = format!("{}_{}", data_type, system);
             pb.set_message(format!("Processing {}", model_name));
@@ -323,7 +345,38 @@ impl TrainingPipeline {
 
             // Step 3a: Fit preprocessor (identify features and encoding)
             let mut preprocessor = Preprocessor::fit(data)?;
-            
+
+            // Collect this system's constant (zero-variance) fields for the
+            // exact-match rule set BEFORE any early-exit below, so that systems
+            // whose autoencoder ends up empty (and whose directory is removed)
+            // still contribute their deterministic rules.
+            let cfields = &preprocessor.get_metadata().constant_fields;
+            if !cfields.is_empty() {
+                let entry = aggregated_constants
+                    .entry(model_name.clone())
+                    .or_insert_with(std::collections::BTreeMap::new);
+                for (name, value) in cfields {
+                    entry.insert(name.clone(), *value);
+                }
+            }
+
+            // Skip systems that have no usable features once the denylist and
+            // string/high-cardinality exclusions are applied (e.g. HK, whose
+            // only fields are a cumulative counter and a pool handle). Training
+            // a zero-feature model is meaningless, and leaving the directory in
+            // place would strand a stale ONNX from a previous run against the
+            // new empty metadata -> an inference-time shape mismatch. Remove the
+            // directory entirely so this system is simply not monitored.
+            if preprocessor.get_metadata().feature_columns.is_empty() {
+                pb.println(format!(
+                    "    ⊘ Skipping {}: no usable features after exclusions — system will not be monitored",
+                    model_name
+                ));
+                fs::remove_dir_all(&model_dir)?;
+                pb.inc(1);
+                continue;
+            }
+
             // Step 3b: Transform data to unscaled feature vectors
             let features_unscaled = preprocessor.transform_batch(data)?;
             
@@ -378,7 +431,78 @@ impl TrainingPipeline {
         }
 
         pb.finish_with_message(format!("✓ Preprocessed {} models", total_groups));
+
+        self.write_exact_match_rules(&aggregated_constants)?;
         Ok(())
+    }
+
+    /// Write (merging with any existing file) the exact-match rule set.
+    ///
+    /// For every constant field discovered during preprocessing we emit a rule
+    /// `{expected, active}`. `active` defaults from a name heuristic — genuine
+    /// state/status fields default on, counter/timer/config fields (constant
+    /// only in this capture) default off — but an existing file's `active`
+    /// choices are preserved so operator edits survive retraining. Only
+    /// `active` rules are enforced at inference.
+    fn write_exact_match_rules(
+        &self,
+        aggregated: &std::collections::BTreeMap<String, std::collections::BTreeMap<String, f64>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        use crate::models::{ExactMatchRule, EXACT_MATCH_RULES_FILE};
+        let path = Path::new(&self.models_dir).join(EXACT_MATCH_RULES_FILE);
+
+        // Load prior file (if any) to preserve operator `active` choices.
+        let prior: std::collections::BTreeMap<String, std::collections::BTreeMap<String, ExactMatchRule>> =
+            fs::read_to_string(&path)
+                .ok()
+                .and_then(|s| serde_json::from_str(&s).ok())
+                .unwrap_or_default();
+
+        let mut out: std::collections::BTreeMap<String, std::collections::BTreeMap<String, ExactMatchRule>> =
+            std::collections::BTreeMap::new();
+        let (mut n_rules, mut n_active) = (0usize, 0usize);
+        for (system, fields) in aggregated {
+            let sys_out = out.entry(system.clone()).or_default();
+            for (field, value) in fields {
+                let active = prior
+                    .get(system)
+                    .and_then(|m| m.get(field))
+                    .map(|r| r.active)
+                    .unwrap_or_else(|| Self::default_rule_active(field));
+                sys_out.insert(field.clone(), ExactMatchRule { expected: *value, active });
+                n_rules += 1;
+                if active {
+                    n_active += 1;
+                }
+            }
+        }
+
+        fs::write(&path, serde_json::to_string_pretty(&out)?)?;
+        println!(
+            "  ✓ Exact-match rules: {} field(s) across {} system(s), {} active -> {}",
+            n_rules,
+            out.len(),
+            n_active,
+            path.display()
+        );
+        Ok(())
+    }
+
+    /// Default enforcement for a constant field's exact-match rule. State/status
+    /// fields default on; counter/timer/size/index/config fields — constant only
+    /// because this capture was short, but variable in real operation — default
+    /// off so they do not reintroduce false positives.
+    fn default_rule_active(name: &str) -> bool {
+        let up = name.to_ascii_uppercase();
+        const COUNTER_LIKE: &[&str] = &[
+            "TIME", "BYTES", "SIZE", "OFFSET", "FILLER", "SAMPLE", "CMDARG",
+            "CMDNUMBER", "ERRCMD", "NEXTSLOT", "DATAVALUE", "LASTACTION",
+            "COUNTDOWN", "TOTALMB", "MEMORYKB", "MAXRESETS", "CHILDCURRENTCC",
+            "MSGACTEXEC", "ACTIVEAPS", "CURRENTENTRYINTABLE", "GPSVAL1",
+            "GPSVAL2", "GPSVAL3", "SOLARPANELP", "BLANKP", "BATTERYP",
+            "ADDRCOUNT", "DWELLTBLENTRY", "DWELLPKTOFFSET",
+        ];
+        !COUNTER_LIKE.iter().any(|t| up.contains(t))
     }
 
     /// Detect the correct Python command for the platform.

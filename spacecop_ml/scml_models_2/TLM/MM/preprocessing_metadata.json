@@ -1,0 +1,19 @@
+{
+  "feature_columns": [
+    "MEMTYPE_NOMEMTYPE",
+    "MEMTYPE_Other"
+  ],
+  "numeric_columns": [],
+  "categorical_valid_values": {
+    "MEMTYPE": [
+      "NOMEMTYPE"
+    ]
+  },
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "LASTACTION": 0.0,
+    "DATAVALUE": 0.0
+  }
+}

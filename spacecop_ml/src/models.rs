@@ -1,5 +1,21 @@
 // Copyright © 2026 Aerospace Corporation
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// Project Title: SpaceCop
+// All rights reserved.
+//
+// This software is provided "as is" without any warranty of any kind either express, implied, or statutory, including, but not
+// limited to, any warranty that the software will conform to specifications any implied warranties of merchantability, fitness
+// for a particular purpose, and freedom from infringement, and any warranty that the documentation will conform to the program, or
+// any warranty that the software will be error free.
+//
+// In no event shall the Aerospace Corporation be liable for any damages, including, but not limited to direct, indirect, special or consequential damages,
+// arising out of, resulting from, or in any way connected with the software or its documentation. Whether or not based upon warranty,
+// contract, tort or otherwise, and whether or not loss was sustained from, or arose out of the results of, or use of, the software,
+// documentation or services provided hereunder
+//
+// For any questions, please contact:
+// Randi Tinney (randi.j.tinney@aero.org)
+// Dominc Berry (dominic.t.berry@aero.org)
+// Brandon Bailey (brandon.bailey@aero.org)
 
 //! Data Models for Spacecraft Command and Telemetry
 //!
@@ -20,6 +36,24 @@
 //! - State definitions for enumerated values
 
 use serde::{Serialize, Deserialize};
+
+/// Filename (under the models directory) holding the exact-match rule set.
+pub const EXACT_MATCH_RULES_FILE: &str = "exact_match_rules.json";
+
+/// A deterministic exact-match rule for a field that was constant in training.
+///
+/// Discrete state/status fields (checksum-enable flags, monitor states, ...)
+/// should hold a fixed nominal value; any deviation is reported directly rather
+/// than run through the autoencoder. `active` gates enforcement so an operator
+/// can disable a rule by editing the JSON — and that choice is preserved across
+/// retrains (the training pipeline merges rather than overwrites).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExactMatchRule {
+    /// The single value observed for this field throughout training.
+    pub expected: f64,
+    /// Whether this rule is enforced at inference.
+    pub active: bool,
+}
 
 // ============================================================================
 // Database structs
@@ -287,7 +321,7 @@ pub struct ParameterJson {
 /// Transforms each ParsedValue into a JSON object with:
 /// - `type`: The data type ("uint", "int", "float", "string", "state")
 /// - `value`: The actual value
-/// - `hex`: Hexadecimal representation (unsigned integers only)
+/// - `hex`: Hexadecimal representation (for integers)
 impl From<ParsedData> for ParsedDataJson {
     fn from(data: ParsedData) -> Self {
         let parameters = data.parameters.into_iter().map(|(name, value)| {

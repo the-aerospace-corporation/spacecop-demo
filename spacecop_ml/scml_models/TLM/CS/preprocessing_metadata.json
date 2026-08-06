@@ -1,0 +1,30 @@
+{
+  "feature_columns": [
+    "CFECOREBASELINE",
+    "CURRENTCSTABLE"
+  ],
+  "numeric_columns": [
+    "CFECOREBASELINE",
+    "CURRENTCSTABLE"
+  ],
+  "categorical_valid_values": {},
+  "missing_value_strategy": "fill_with_zero",
+  "categorical_encoding": "one_hot",
+  "scaling": "min_max_scaler",
+  "constant_fields": {
+    "OSBASELINE": 0.0,
+    "ONESHOTTASKINUSE": 0.0,
+    "EEPROMCSSTATE": 1.0,
+    "MEMORYCSSTATE": 1.0,
+    "LASTONESHOTSIZE": 0.0,
+    "CURRENTENTRYINTABLE": 0.0,
+    "CFECORECSSTATE": 1.0,
+    "APPCSSTATE": 1.0,
+    "TABLESCSSTATE": 1.0,
+    "OSCSSTATE": 1.0,
+    "FILLER8": 0.0,
+    "CHILDTASKINUSE": 0.0,
+    "EEPROMBASELINE": 0.0,
+    "LASTONESHOTMAXBYTESPERCYCLE": 0.0
+  }
+}

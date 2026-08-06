@@ -1,0 +1,71 @@
+{
+  "preprocessing": {
+    "feature_columns": [
+      "AccelX",
+      "AccelY",
+      "AccelZ",
+      "Altitude",
+      "BMEValid",
+      "GyroX",
+      "GyroY",
+      "GyroZ",
+      "Humidity",
+      "ImuValid",
+      "PayloadValid",
+      "Pressure",
+      "Temperature"
+    ],
+    "numeric_columns": [
+      "AccelX",
+      "AccelY",
+      "AccelZ",
+      "Altitude",
+      "BMEValid",
+      "GyroX",
+      "GyroY",
+      "GyroZ",
+      "Humidity",
+      "ImuValid",
+      "PayloadValid",
+      "Pressure",
+      "Temperature"
+    ],
+    "categorical_valid_values": {},
+    "missing_value_strategy": "fill_with_zero",
+    "categorical_encoding": "one_hot",
+    "scaling": "min_max_scaler",
+    "constant_fields": {
+      "GPSVal3": 0.0,
+      "GPSValid": 0.0,
+      "GPSVal2": 0.0,
+      "GPSVal1": 0.0
+    }
+  },
+  "training": {
+    "training_samples": 8920,
+    "false_positive_rate": 0.010089686098654708,
+    "threshold": 0.028377763384606874,
+    "score_range": [
+      0.0001667868635217292,
+      0.053742283557977916
+    ],
+    "model_type": "Autoencoder",
+    "model_params": {
+      "encoding_dim": 3,
+      "architecture": [
+        13,
+        9,
+        6,
+        3,
+        6,
+        9,
+        13
+      ],
+      "epochs": 50,
+      "batch_size": 32,
+      "shuffle": true,
+      "optimizer": "adam",
+      "loss": "mse"
+    }
+  }
+}
